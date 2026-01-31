@@ -321,7 +321,7 @@ export default function Home() {
               Ready to get something done today?
             </h2>
             <Link 
-              href="/post" 
+              href="/signup"
               className="inline-block h-12 px-8 rounded-xl bg-primary text-white font-medium hover:bg-secondary transition-colors flex items-center justify-center"
             >
               Post a job
