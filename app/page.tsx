@@ -354,7 +354,7 @@ export default function Home() {
                   Job Listers
                 </h3>
                 <div className="space-y-2">
-                  <Link href="/post" className="block text-sm text-ink/80 hover:text-accent transition-colors">
+                  <Link href="/signup" className="block text-sm text-ink/80 hover:text-accent transition-colors">
                     List a Job
                   </Link>
                   <a href="#how-it-works" className="block text-sm text-ink/80 hover:text-accent transition-colors">
@@ -378,9 +378,6 @@ export default function Home() {
                   </Link>
                   <Link href="/mission" className="block text-sm text-ink/80 hover:text-accent transition-colors">
                     Our Mission
-                  </Link>
-                  <Link href="/team" className="block text-sm text-ink/80 hover:text-accent transition-colors">
-                    Swifto Team
                   </Link>
                 </div>
               </div>
