@@ -1,12 +1,15 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { mapJobRowToBrowseJob, type BrowseJob } from '@/lib/types'
 import { SiteNav } from '@/components/site-nav'
 import { useAuth } from '@/lib/auth-context'
+import { captureEvent } from '@/lib/posthog'
+import { LoadingSpinner } from '@/components/loading-spinner'
+import { ErrorAlert } from '@/components/error-alert'
 
 export default function BrowseJobsPage() {
   const router = useRouter()
@@ -23,45 +26,97 @@ export default function BrowseJobsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [applying, setApplying] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const fetchJobs = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const supabase = createClient()
+      const { data, error: err } = await supabase
+        .from('jobs')
+        .select('id, job_name, category, size_or_time, address, area, price, completion_date, is_flexible, status, created_at')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+
+      if (err) {
+        setError(err.message)
+        setAllJobs([])
+        return
+      }
+      setAllJobs((data ?? []).map(mapJobRowToBrowseJob))
+    } catch (e: unknown) {
+      const isAbort = e && (
+        (e instanceof Error && e.name === 'AbortError') ||
+        (typeof e === 'object' && 'name' in e && (e as { name?: string }).name === 'AbortError') ||
+        (typeof (e as { message?: unknown })?.message === 'string' && String((e as { message: string }).message).toLowerCase().includes('aborted'))
+      )
+      if (isAbort) {
+        setAllJobs([])
+        return
+      }
+      setError(e instanceof Error ? e.message : 'Failed to load jobs')
+      setAllJobs([])
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const [categoryFilter, setCategoryFilter] = useState('')
+  const [areaFilter, setAreaFilter] = useState('')
+  const [minPrice, setMinPrice] = useState<number | ''>('')
+  const [maxPrice, setMaxPrice] = useState<number | ''>('')
   const jobsPerPage = 25
 
-  // Fetch jobs and (if logged-in student) their applications
-  useEffect(() => {
-    async function fetchJobs() {
-      setLoading(true)
-      setError(null)
-      try {
-        const supabase = createClient()
-        const { data, error: err } = await supabase
-          .from('jobs')
-          .select('id, job_name, category, size_or_time, address, area, price, completion_date, is_flexible, status, created_at')
-          .eq('status', 'active')
-          .order('created_at', { ascending: false })
+  const CATEGORY_OPTIONS = [
+    { value: '', label: 'All categories' },
+    { value: 'moving', label: 'Moving' },
+    { value: 'cleaning', label: 'Cleaning' },
+    { value: 'tutoring', label: 'Tutoring' },
+    { value: 'delivery', label: 'Delivery' },
+    { value: 'assembly', label: 'Assembly' },
+    { value: 'yard-work', label: 'Yard Work' },
+    { value: 'pet-care', label: 'Pet Care' },
+    { value: 'other', label: 'Other' },
+  ]
 
-        if (err) {
-          setError(err.message)
-          setAllJobs([])
-          return
-        }
-        setAllJobs((data ?? []).map(mapJobRowToBrowseJob))
-      } catch (e: unknown) {
-        const isAbort = e && (
-          (e instanceof Error && e.name === 'AbortError') ||
-          (typeof e === 'object' && 'name' in e && (e as { name?: string }).name === 'AbortError') ||
-          (typeof (e as { message?: unknown })?.message === 'string' && String((e as { message: string }).message).toLowerCase().includes('aborted'))
-        )
-        if (isAbort) {
-          setLoading(false)
-          return
-        }
-        setError(e instanceof Error ? e.message : 'Failed to load jobs')
-        setAllJobs([])
-      } finally {
-        setLoading(false)
-      }
+  const filteredJobs = useMemo(() => {
+    let list = allJobs
+    const q = searchQuery.trim().toLowerCase()
+    if (q) {
+      list = list.filter(
+        (job) =>
+          job.name.toLowerCase().includes(q) ||
+          job.category.toLowerCase().includes(q) ||
+          job.area.toLowerCase().includes(q) ||
+          job.timeNeeded.toLowerCase().includes(q)
+      )
     }
+    if (categoryFilter) {
+      list = list.filter((job) => job.category === categoryFilter)
+    }
+    if (areaFilter) {
+      list = list.filter((job) => job.area.toLowerCase() === areaFilter.toLowerCase())
+    }
+    if (minPrice !== '' && minPrice !== null) {
+      const min = Number(minPrice)
+      if (!isNaN(min)) list = list.filter((job) => job.priceAmount >= min)
+    }
+    if (maxPrice !== '' && maxPrice !== null) {
+      const max = Number(maxPrice)
+      if (!isNaN(max)) list = list.filter((job) => job.priceAmount <= max)
+    }
+    return list
+  }, [allJobs, searchQuery, categoryFilter, areaFilter, minPrice, maxPrice])
+
+  const uniqueAreas = useMemo(() => {
+    const areas = new Set(allJobs.map((j) => j.area.trim()).filter(Boolean))
+    return Array.from(areas).sort()
+  }, [allJobs])
+
+  useEffect(() => {
     fetchJobs()
-  }, [])
+  }, [fetchJobs])
 
   // Fetch student's applications when logged in
   useEffect(() => {
@@ -110,6 +165,7 @@ export default function BrowseJobsPage() {
       else setError(err.message)
       return
     }
+    captureEvent('job_applied', { job_id: jobId, application_type: 'quick' })
     setAppliedJobs(prev => new Set(prev).add(jobId))
   }
 
@@ -170,21 +226,26 @@ export default function BrowseJobsPage() {
       }
       return
     }
+    captureEvent('job_applied', { job_id: selectedJob, application_type: 'full' })
     setAppliedJobs(prev => new Set(prev).add(selectedJob))
     handleCloseModal()
   }
 
   const isFormValid = formData.name.trim() !== '' && formData.experience.trim() !== '' && formData.availability.trim() !== ''
 
-  const totalPages = Math.max(1, Math.ceil(allJobs.length / jobsPerPage))
+  const totalPages = Math.max(1, Math.ceil(filteredJobs.length / jobsPerPage))
   const indexOfLastJob = currentPage * jobsPerPage
   const indexOfFirstJob = indexOfLastJob - jobsPerPage
-  const jobs = allJobs.slice(indexOfFirstJob, indexOfLastJob)
+  const jobs = filteredJobs.slice(indexOfFirstJob, indexOfLastJob)
 
   const selectedJobData = useMemo(() => {
     if (!selectedJob) return null
     return allJobs.find(job => job.id === selectedJob) || null
   }, [selectedJob, allJobs])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, categoryFilter, areaFilter, minPrice, maxPrice])
 
   return (
     <>
@@ -203,17 +264,20 @@ export default function BrowseJobsPage() {
         <section className="py-8 md:py-12 bg-canvas">
           <div className="mx-auto w-full max-w-4xl px-4 md:px-8">
             {loading && (
-              <div className="text-center py-16 text-ink/70">
-                <p className="text-lg font-medium">Loading jobs…</p>
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <LoadingSpinner size="lg" />
+                <p className="text-lg font-medium text-ink/70">Loading jobs…</p>
               </div>
             )}
             {error && !loading && (
-              <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
-                <p className="text-red-800 font-medium">{error}</p>
-                {error.toLowerCase().includes('fetch') || error.toLowerCase().includes('network') || error.toLowerCase().includes('env') ? (
-                  <p className="text-sm text-red-700 mt-2">Check .env.local for NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.</p>
-                ) : null}
-              </div>
+              <ErrorAlert
+                message={
+                  error.toLowerCase().includes('fetch') || error.toLowerCase().includes('network') || error.toLowerCase().includes('env')
+                    ? `${error} Check .env.local for NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.`
+                    : error
+                }
+                onRetry={fetchJobs}
+              />
             )}
             {!loading && !error && allJobs.length === 0 && (
               <div className="text-center py-16 text-ink/70">
@@ -222,6 +286,104 @@ export default function BrowseJobsPage() {
               </div>
             )}
             {!loading && !error && allJobs.length > 0 && (
+            <>
+            {/* Search and Filters */}
+            <div className="mb-8 space-y-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1 relative">
+                  <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-ink/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search jobs by name, category, area..."
+                    className="w-full h-12 pl-12 pr-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row flex-wrap gap-4">
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="h-11 px-4 rounded-xl border border-ink/20 text-ink focus:outline-none focus:ring-2 focus:ring-primary bg-white min-w-[160px]"
+                >
+                  {CATEGORY_OPTIONS.map((opt) => (
+                    <option key={opt.value || 'all'} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+                <select
+                  value={areaFilter}
+                  onChange={(e) => setAreaFilter(e.target.value)}
+                  className="h-11 px-4 rounded-xl border border-ink/20 text-ink focus:outline-none focus:ring-2 focus:ring-primary bg-white min-w-[160px]"
+                >
+                  <option value="">All areas</option>
+                  {uniqueAreas.map((area) => (
+                    <option key={area} value={area}>{area}</option>
+                  ))}
+                </select>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    step={5}
+                    value={minPrice === '' ? '' : minPrice}
+                    onChange={(e) => setMinPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                    placeholder="Min $"
+                    className="h-11 w-24 px-3 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+                  />
+                  <span className="text-ink/60">–</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={5}
+                    value={maxPrice === '' ? '' : maxPrice}
+                    onChange={(e) => setMaxPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                    placeholder="Max $"
+                    className="h-11 w-24 px-3 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+                  />
+                </div>
+                {(searchQuery || categoryFilter || areaFilter || minPrice !== '' || maxPrice !== '') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery('')
+                      setCategoryFilter('')
+                      setAreaFilter('')
+                      setMinPrice('')
+                      setMaxPrice('')
+                    }}
+                    className="h-11 px-4 rounded-xl border border-ink/20 text-ink hover:bg-ink/5 transition-colors text-sm font-medium"
+                  >
+                    Clear filters
+                  </button>
+                )}
+              </div>
+              <p className="text-sm text-ink/60">
+                Showing {filteredJobs.length} of {allJobs.length} job{allJobs.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+
+            {filteredJobs.length === 0 ? (
+              <div className="text-center py-16 text-ink/70 rounded-xl border border-ink/10 bg-white">
+                <p className="text-lg font-medium">No jobs match your filters.</p>
+                <p className="text-sm mt-2">Try adjusting your search or filters.</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('')
+                    setCategoryFilter('')
+                    setAreaFilter('')
+                    setMinPrice('')
+                    setMaxPrice('')
+                  }}
+                  className="mt-4 h-10 px-6 rounded-xl bg-primary text-white font-medium hover:bg-secondary transition-colors"
+                >
+                  Clear filters
+                </button>
+              </div>
+            ) : (
             <>
             <div className="space-y-4">
               {jobs.map((job) => (
@@ -264,7 +426,7 @@ export default function BrowseJobsPage() {
                     </div>
                     
                     {/* Action buttons */}
-                    <div className="flex gap-3 pt-2 border-t border-ink/10 justify-end">
+                    <div className="flex flex-wrap gap-3 pt-2 border-t border-ink/10 justify-end">
                       {appliedJobs.has(job.id) ? (
                         <button 
                           disabled
@@ -296,7 +458,7 @@ export default function BrowseJobsPage() {
             </div>
 
             {/* Pagination buttons */}
-            {totalPages > 1 && (
+            {totalPages > 1 && filteredJobs.length > 0 ? (
               <div className="flex justify-center items-center gap-4 mt-8">
                 <button
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
@@ -318,6 +480,8 @@ export default function BrowseJobsPage() {
                   Next
                 </button>
               </div>
+            ) : null}
+            </>
             )}
             </>
             )}
@@ -327,7 +491,7 @@ export default function BrowseJobsPage() {
 
       {/* Application Modal */}
       {selectedJob && selectedJobData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           {/* Backdrop */}
           <div 
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -335,7 +499,7 @@ export default function BrowseJobsPage() {
           ></div>
           
           {/* Modal Card */}
-          <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 md:p-8">
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
@@ -347,7 +511,8 @@ export default function BrowseJobsPage() {
                 </div>
                 <button
                   onClick={handleCloseModal}
-                  className="w-10 h-10 rounded-full bg-ink/5 hover:bg-ink/10 flex items-center justify-center transition-colors"
+                  className="min-w-[44px] min-h-[44px] w-10 h-10 rounded-full bg-ink/5 hover:bg-ink/10 flex items-center justify-center transition-colors"
+                  aria-label="Close"
                 >
                   <svg className="w-6 h-6 text-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

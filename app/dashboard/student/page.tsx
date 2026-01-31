@@ -5,10 +5,12 @@ import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { createClient } from '@/lib/supabase/client'
 import { SiteNav } from '@/components/site-nav'
+import { WithdrawModal } from '@/components/withdraw-modal'
 
 export default function StudentDashboardPage() {
   const { user } = useAuth()
-  const [profile, setProfile] = useState<{ first_name: string; last_name: string } | null>(null)
+  const [profile, setProfile] = useState<{ first_name: string; last_name: string; balance_cents?: number } | null>(null)
+  const [showWithdraw, setShowWithdraw] = useState(false)
 
   const displayName = useMemo(() => {
     // 1) Prefer name from user_metadata (set at signup)
@@ -39,7 +41,7 @@ export default function StudentDashboardPage() {
       const supabase = createClient()
       const { data } = await supabase
         .from('profiles')
-        .select('first_name, last_name')
+        .select('first_name, last_name, balance_cents')
         .eq('id', user.id)
         .single()
       if (data) {
@@ -48,6 +50,7 @@ export default function StudentDashboardPage() {
         setProfile({
           first_name: user.user_metadata.first_name ?? '',
           last_name: user.user_metadata.last_name ?? '',
+          balance_cents: 0,
         })
       }
     }
@@ -61,8 +64,8 @@ export default function StudentDashboardPage() {
         <section className="py-16 md:py-24">
           <div className="mx-auto w-full max-w-6xl px-4 md:px-8">
             {/* Balance - Button Style */}
-            <div className="mb-8 flex items-center gap-4 flex-wrap">
-              <button className="bg-white rounded-xl border-2 border-white/20 shadow-lg px-8 py-4 flex items-center gap-3 hover:shadow-xl hover:border-white/40 transition-all duration-300 hover:scale-105 cursor-pointer">
+            <div className="mb-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+              <div className="bg-white rounded-xl border-2 border-white/20 shadow-lg px-6 sm:px-8 py-4 flex items-center gap-3 min-w-0">
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                   <svg className="w-7 h-7 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -71,16 +74,32 @@ export default function StudentDashboardPage() {
                 <div className="text-left">
                   <p className="text-xs text-ink/60 uppercase tracking-wide font-medium">Available Balance</p>
                   <h2 className="text-xl md:text-2xl font-bold text-ink">
-                    $455.00
+                    ${((profile?.balance_cents ?? 0) / 100).toFixed(2)}
                   </h2>
                 </div>
-              </button>
+              </div>
               
               {/* Withdrawal CTA Button */}
-              <button className="bg-white text-primary rounded-xl px-6 py-3 font-semibold hover:bg-canvas transition-all duration-300 shadow-lg hover:shadow-xl border-2 border-white/20 hover:border-white/40 whitespace-nowrap">
+              <button
+                onClick={() => setShowWithdraw(true)}
+                disabled={(profile?.balance_cents ?? 0) < 100}
+                className="bg-white text-primary rounded-xl px-6 py-3 font-semibold hover:bg-canvas transition-all duration-300 shadow-lg hover:shadow-xl border-2 border-white/20 hover:border-white/40 whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed min-h-[48px]"
+              >
                 Withdraw Earnings
               </button>
             </div>
+
+            {showWithdraw && user && (
+              <WithdrawModal
+                balanceCents={profile?.balance_cents ?? 0}
+                onClose={() => setShowWithdraw(false)}
+                onSuccess={async () => {
+                  const supabase = createClient()
+                  const { data } = await supabase.from('profiles').select('first_name, last_name, balance_cents').eq('id', user.id).single()
+                  if (data) setProfile(data)
+                }}
+              />
+            )}
 
             {/* Welcome Message - Right Side */}
             <div className="mb-6 flex justify-center md:justify-end md:pr-8 -mt-8 md:-mt-12">

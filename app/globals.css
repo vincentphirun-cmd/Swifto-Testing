@@ -10,5 +10,12 @@
   body {
     @apply bg-canvas text-ink antialiased;
   }
+
+  /* Prevent iOS zoom on input focus - 16px minimum prevents auto-zoom */
+  @media (max-width: 639px) {
+    input, select, textarea {
+      font-size: 16px;
+    }
+  }
 }
 

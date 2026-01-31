@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
 import { createClient } from './supabase/client'
+import { identifyUser } from './posthog'
 
 type AuthContextType = {
   user: User | null
@@ -50,8 +51,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (result.error && !result.error.message?.includes('aborted')) {
           console.error('Error getting session:', result.error)
         }
-        setUser(result.data?.session?.user ?? null)
+        const u = result.data?.session?.user ?? null
+        setUser(u)
         setLoading(false)
+        if (u) {
+          identifyUser(u.id, {
+            email: u.email,
+            role: u.user_metadata?.role,
+          })
+        }
       } catch (err: any) {
         if (!mounted) return
         // Silently ignore abort errors - they happen during email confirmation
@@ -72,9 +80,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return
         
         try {
-          // Handle all auth events
           setUser(session?.user ?? null)
           setLoading(false)
+          if (session?.user) {
+            identifyUser(session.user.id, {
+              email: session.user.email,
+              role: session.user.user_metadata?.role,
+            })
+          }
         } catch (err: any) {
           if (!mounted) return
           // Silently ignore abort errors

@@ -1,10 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth-context'
 import { SiteNav } from '@/components/site-nav'
+import { LoadingSpinner } from '@/components/loading-spinner'
+import { ErrorAlert } from '@/components/error-alert'
 
 type CompletionRow = {
   id: string
@@ -27,9 +29,12 @@ export default function StudentJobsCompletedPage() {
   const { user } = useAuth()
   const [completions, setCompletions] = useState<CompletionRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    async function fetchCompletions() {
+  const fetchCompletions = useCallback(async () => {
+      setLoading(true)
+      setError(null)
+      try {
       if (!user) {
         setLoading(false)
         return
@@ -43,6 +48,7 @@ export default function StudentJobsCompletedPage() {
 
       if (!compData || compData.length === 0) {
         setCompletions([])
+        setError(null)
         setLoading(false)
         return
       }
@@ -52,7 +58,7 @@ export default function StudentJobsCompletedPage() {
       const { data: jobsData } = await supabase.from('jobs').select('id, job_name, category, size_or_time, address, price').in('id', jobIds)
       const { data: profData } = await supabase.from('profiles').select('id, first_name, last_name').in('id', listerIds)
 
-      const jobsMap: Record<string, (typeof jobsData)[0]> = {}
+      const jobsMap: Record<string, NonNullable<typeof jobsData>[number]> = {}
       for (const j of jobsData ?? []) jobsMap[j.id] = j
       const profMap: Record<string, { first_name: string; last_name: string }> = {}
       for (const p of profData ?? []) profMap[p.id] = p
@@ -63,10 +69,18 @@ export default function StudentJobsCompletedPage() {
         listerProfile: profMap[c.lister_id] ?? null,
       }))
       setCompletions(combined)
+      setError(null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load completed jobs')
+      setCompletions([])
+    } finally {
       setLoading(false)
     }
-    fetchCompletions()
   }, [user])
+
+  useEffect(() => {
+    if (user) fetchCompletions()
+  }, [user, fetchCompletions])
 
   if (!user) {
     return (
@@ -100,9 +114,12 @@ export default function StudentJobsCompletedPage() {
             </div>
 
             {loading ? (
-              <div className="text-center py-16 text-white/80">
-                <p className="text-lg">Loading completed jobs…</p>
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <LoadingSpinner size="lg" variant="light" />
+                <p className="text-lg text-white/80">Loading completed jobs…</p>
               </div>
+            ) : error ? (
+              <ErrorAlert message={error} onRetry={fetchCompletions} variant="dark" className="max-w-xl mx-auto" />
             ) : completions.length === 0 ? (
               <div className="text-center py-16 text-white/80">
                 <p className="text-lg">No completed jobs yet.</p>

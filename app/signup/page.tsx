@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth-context'
 import { SiteNav } from '@/components/site-nav'
+import { captureEvent } from '@/lib/posthog'
 
 export default function SignUpPage() {
   const router = useRouter()
@@ -29,25 +30,16 @@ export default function SignUpPage() {
     const supabase = createClient()
     let cancelled = false
 
-    supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-      .then(({ data }) => {
+    void (async () => {
+      try {
+        const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single()
         if (cancelled) return
-        if (data?.role === 'lister') {
-          router.replace('/dashboard/lister')
-        } else {
-          // Default to student dashboard if role is missing or 'student'
-          router.replace('/dashboard/student')
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          router.replace('/dashboard/student')
-        }
-      })
+        if (data?.role === 'lister') router.replace('/dashboard/lister')
+        else router.replace('/dashboard/student')
+      } catch {
+        if (!cancelled) router.replace('/dashboard/student')
+      }
+    })()
 
     return () => {
       cancelled = true
@@ -148,11 +140,13 @@ export default function SignUpPage() {
               }),
             })
             if (res.ok) {
+              captureEvent('signed_up', { role: userType })
               if (userType === 'lister') router.push('/dashboard/lister')
               else router.push('/dashboard/student')
               return
             }
             if (res.status === 409) {
+              captureEvent('signed_up', { role: userType })
               if (userType === 'lister') router.push('/dashboard/lister')
               else router.push('/dashboard/student')
               return
@@ -199,14 +193,14 @@ export default function SignUpPage() {
           return
         }
 
-        // Redirect based on role
+        captureEvent('signed_up', { role: userType })
         if (userType === 'lister') {
           router.push('/dashboard/lister')
         } else {
           router.push('/dashboard/student')
         }
       } else {
-        // Email confirmation required - profile will be created in callback route using user_metadata
+        captureEvent('signup_initiated', { role: userType })
         setError(null)
         alert('Please check your email to confirm your account. After confirming, you can log in.')
         router.push('/login')

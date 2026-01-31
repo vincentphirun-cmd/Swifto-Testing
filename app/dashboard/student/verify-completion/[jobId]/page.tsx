@@ -6,6 +6,8 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth-context'
 import { SiteNav } from '@/components/site-nav'
+import { LoadingSpinner } from '@/components/loading-spinner'
+import { captureEvent } from '@/lib/posthog'
 
 export default function StudentVerifyCompletionPage() {
   const params = useParams()
@@ -89,6 +91,7 @@ export default function StudentVerifyCompletionPage() {
       setError(err.message)
       return
     }
+    captureEvent('completion_verified', { job_id: jobId, role: 'student' })
     router.push('/dashboard/student/jobs-applied')
   }
 
@@ -107,8 +110,9 @@ export default function StudentVerifyCompletionPage() {
     return (
       <>
         <SiteNav />
-        <main className="min-h-screen bg-primary flex items-center justify-center">
-          <p className="text-white">Loading…</p>
+        <main className="min-h-screen bg-primary flex flex-col items-center justify-center gap-4">
+          <LoadingSpinner size="lg" variant="light" />
+          <p className="text-white/80">Loading…</p>
         </main>
       </>
     )

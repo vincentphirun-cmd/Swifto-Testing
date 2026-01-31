@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { AuthProvider } from '@/lib/auth-context'
 import { ErrorBoundary } from './error-boundary'
+import { PostHogProvider } from './posthog-provider'
 
 export function AuthProviderWrapper({ children }: { children: React.ReactNode }) {
   // Global handler for unhandled promise rejections (AbortError from Supabase)
@@ -22,7 +23,9 @@ export function AuthProviderWrapper({ children }: { children: React.ReactNode })
 
   return (
     <ErrorBoundary>
-      <AuthProvider>{children}</AuthProvider>
+      <PostHogProvider>
+        <AuthProvider>{children}</AuthProvider>
+      </PostHogProvider>
     </ErrorBoundary>
   )
 }

@@ -15,6 +15,12 @@ type Profile = {
 export default function StudentProfilePage() {
   const { user } = useAuth()
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [university, setUniversity] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
 
   const displayName = useMemo(() => {
     // 1) Prefer name from user_metadata
@@ -36,13 +42,6 @@ export default function StudentProfilePage() {
     return 'User'
   }, [user, profile])
 
-  const university = useMemo(() => {
-    const metaUni = (user as any)?.user_metadata?.university
-    if (metaUni) return metaUni as string
-    if (profile?.university) return profile.university
-    return ''
-  }, [user, profile])
-
   useEffect(() => {
     async function fetchProfile() {
       if (!user) {
@@ -57,10 +56,44 @@ export default function StudentProfilePage() {
         .single()
       if (data) {
         setProfile(data as Profile)
+        setFirstName(data.first_name ?? '')
+        setLastName(data.last_name ?? '')
+        setUniversity(data.university ?? '')
       }
     }
     fetchProfile()
   }, [user])
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user) return
+    setError(null)
+    setSuccess(false)
+    setSaving(true)
+    try {
+      const supabase = createClient()
+      const { error: err } = await supabase
+        .from('profiles')
+        .update({
+          first_name: firstName.trim() || '',
+          last_name: lastName.trim() || '',
+          university: university.trim() || null,
+        })
+        .eq('id', user.id)
+      if (err) throw err
+      setProfile({
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        university: university.trim() || null,
+      })
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to save')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <>
@@ -92,10 +125,66 @@ export default function StudentProfilePage() {
                   </div>
                 </div>
 
-                {/* Name */}
-                <div className="text-center">
-                  <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-ink">
-                    {displayName}
+                {/* Editable Profile */}
+                <form onSubmit={handleSave} className="space-y-4">
+                  <div className="space-y-2">
+                    <label htmlFor="firstName" className="block text-sm font-medium text-ink">
+                      First name
+                    </label>
+                    <input
+                      id="firstName"
+                      type="text"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      className="w-full h-11 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="First name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="lastName" className="block text-sm font-medium text-ink">
+                      Last name
+                    </label>
+                    <input
+                      id="lastName"
+                      type="text"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      className="w-full h-11 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="Last name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="university" className="block text-sm font-medium text-ink">
+                      University
+                    </label>
+                    <input
+                      id="university"
+                      type="text"
+                      value={university}
+                      onChange={(e) => setUniversity(e.target.value)}
+                      className="w-full h-11 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="e.g. University of Auckland"
+                    />
+                  </div>
+                  {error && (
+                    <p className="text-sm text-red-600">{error}</p>
+                  )}
+                  {success && (
+                    <p className="text-sm text-green-600">Profile saved successfully.</p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="w-full h-11 rounded-xl bg-primary text-white font-semibold hover:bg-secondary transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {saving ? 'Saving…' : 'Save changes'}
+                  </button>
+                </form>
+
+                {/* Name display (read-only summary) */}
+                <div className="text-center pt-2">
+                  <h1 className="text-2xl font-semibold tracking-tight text-ink">
+                    {displayName || 'Your profile'}
                   </h1>
                 </div>
 
@@ -104,21 +193,6 @@ export default function StudentProfilePage() {
                   <p className="text-base text-ink/80">
                     {user?.email ?? ''}
                   </p>
-                </div>
-
-                {/* University */}
-                <div className="space-y-2">
-                  <label htmlFor="university" className="block text-lg font-semibold text-ink">
-                    University
-                  </label>
-                  <input
-                    id="university"
-                    name="university"
-                    type="text"
-                    value={university}
-                    readOnly
-                    className="w-full h-12 px-4 rounded-xl border border-ink/20 text-ink bg-gray-50"
-                  />
                 </div>
 
                 {/* What they are Studying */}

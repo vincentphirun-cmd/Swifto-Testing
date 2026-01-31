@@ -2,11 +2,13 @@
 export type BrowseJob = {
   id: string
   name: string
+  category: string
   area: string
   date: string
   timeOfDay: string
   timeNeeded: string
   pay: string
+  priceAmount: number
 }
 
 /** Raw job row from Supabase */
@@ -38,10 +40,12 @@ export function mapJobRowToBrowseJob(row: JobRow): BrowseJob {
   return {
     id: row.id,
     name: row.job_name,
+    category: row.category,
     area: row.area,
     date,
     timeOfDay,
     timeNeeded: row.size_or_time,
     pay: `$${Number(row.price).toFixed(0)}`,
+    priceAmount: Number(row.price),
   }
 }

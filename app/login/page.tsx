@@ -1,13 +1,14 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth-context'
 import { SiteNav } from '@/components/site-nav'
+import { captureEvent } from '@/lib/posthog'
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, loading: authLoading } = useAuth()
@@ -44,19 +45,16 @@ export default function LoginPage() {
 
     const supabase = createClient()
     let cancelled = false
-    supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-      .then(({ data }) => {
+    void (async () => {
+      try {
+        const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single()
         if (cancelled) return
         if (data?.role === 'lister') router.replace('/dashboard/lister')
         else router.replace('/dashboard/student')
-      })
-      .catch(() => {
+      } catch {
         if (!cancelled) router.replace('/dashboard/student')
-      })
+      }
+    })()
     return () => { cancelled = true }
   }, [user, router, authLoading, searchParams])
 
@@ -90,6 +88,7 @@ export default function LoginPage() {
       }
 
       if (data.user) {
+        captureEvent('logged_in')
         const redirectTo = searchParams.get('redirect')
         const safeRedirect = redirectTo?.startsWith('/') && !redirectTo.startsWith('//')
           ? redirectTo
@@ -197,5 +196,17 @@ export default function LoginPage() {
         </section>
       </main>
     </>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-primary flex items-center justify-center">
+        <p className="text-white">Loading…</p>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   )
 }

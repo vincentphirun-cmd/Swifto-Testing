@@ -1,10 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth-context'
 import { SiteNav } from '@/components/site-nav'
+import { LoadingSpinner } from '@/components/loading-spinner'
+import { ErrorAlert } from '@/components/error-alert'
 
 type ApplicationWithJob = {
   id: string
@@ -30,13 +32,16 @@ export default function JobsAppliedPage() {
   const [applications, setApplications] = useState<ApplicationWithJob[]>([])
   const [awaitingStudentVerify, setAwaitingStudentVerify] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    async function fetchApplications() {
+  const fetchApplications = useCallback(async () => {
       if (!user) {
         setLoading(false)
         return
       }
+      setLoading(true)
+      setError(null)
+      try {
       const supabase = createClient()
       const { data: appsData } = await supabase
         .from('job_applications')
@@ -47,20 +52,21 @@ export default function JobsAppliedPage() {
       if (!appsData || appsData.length === 0) {
         setApplications([])
         setAwaitingStudentVerify(new Set())
+        setError(null)
         setLoading(false)
         return
       }
 
-      const jobIds = [...new Set(appsData.map((a) => a.job_id))]
+      const jobIds = Array.from(new Set(appsData.map((a) => a.job_id)))
       const { data: jobsData } = await supabase
         .from('jobs')
         .select('id, job_name, category, size_or_time, address, area, price, completion_date, is_flexible, lister_id')
         .in('id', jobIds)
 
-      const jobsMap: Record<string, (typeof jobsData)[0]> = {}
+      const jobsMap: Record<string, NonNullable<typeof jobsData>[number]> = {}
       for (const j of jobsData ?? []) jobsMap[j.id] = j
 
-      const listerIds = [...new Set((jobsData ?? []).map((j) => j.lister_id))]
+      const listerIds = Array.from(new Set((jobsData ?? []).map((j) => j.lister_id)))
       let listersMap: Record<string, { first_name: string; last_name: string }> = {}
       if (listerIds.length > 0) {
         const { data: profData } = await supabase
@@ -111,10 +117,18 @@ export default function JobsAppliedPage() {
         }
       })
       setApplications(combined)
+      setError(null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load applications')
+      setApplications([])
+    } finally {
       setLoading(false)
     }
-    fetchApplications()
   }, [user])
+
+  useEffect(() => {
+    if (user) fetchApplications()
+  }, [user, fetchApplications])
 
   const formatDate = (d: string | null, flexible: boolean) =>
     flexible ? 'Flexible' : d ? new Date(d).toLocaleDateString('en-NZ', { day: 'numeric', month: 'long', year: 'numeric' }) : 'TBD'
@@ -155,9 +169,12 @@ export default function JobsAppliedPage() {
             </div>
 
             {loading ? (
-              <div className="text-center py-16 text-white/80">
-                <p className="text-lg">Loading applications…</p>
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <LoadingSpinner size="lg" variant="light" />
+                <p className="text-lg text-white/80">Loading applications…</p>
               </div>
+            ) : error ? (
+              <ErrorAlert message={error} onRetry={fetchApplications} variant="dark" className="max-w-xl" />
             ) : (
               <>
                 <div className="mb-8">

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth-context'
 import { SiteNav } from '@/components/site-nav'
+import { captureEvent } from '@/lib/posthog'
 
 export default function PostJobPage() {
   const router = useRouter()
@@ -88,6 +89,7 @@ export default function PostJobPage() {
         return
       }
 
+      captureEvent('job_posted', { category: formData.category, price })
       setFormData({
         jobName: '',
         category: '',

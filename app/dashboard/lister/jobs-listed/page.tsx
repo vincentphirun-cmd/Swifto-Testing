@@ -1,10 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth-context'
 import { SiteNav } from '@/components/site-nav'
+import { LoadingSpinner } from '@/components/loading-spinner'
+import { ErrorAlert } from '@/components/error-alert'
 
 type ApplicationStatus = 'pending' | 'accepted' | 'not_selected'
 
@@ -48,14 +50,17 @@ export default function JobsListedPage() {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'active' | 'not_selected'>('active')
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [updating, setUpdating] = useState(false)
 
-  useEffect(() => {
-    async function fetch() {
+  const fetchData = useCallback(async () => {
+      setLoading(true)
+      setError(null)
       if (!user) {
         setLoading(false)
         return
       }
+      try {
       const supabase = createClient()
       const { data: jobsData, error: jobsErr } = await supabase
         .from('jobs')
@@ -65,9 +70,12 @@ export default function JobsListedPage() {
         .order('created_at', { ascending: false })
 
       if (jobsErr) {
+        setError(jobsErr.message)
+        setJobs([])
         setLoading(false)
         return
       }
+      setError(null)
       setJobs(jobsData ?? [])
 
       const jobIds = (jobsData ?? []).map((j) => j.id)
@@ -82,7 +90,7 @@ export default function JobsListedPage() {
         .select('id, job_id, student_id, status, application_name, experience, availability')
         .in('job_id', jobIds)
 
-      const studentIds = [...new Set((appsData ?? []).map((a: { student_id: string }) => a.student_id))]
+      const studentIds = Array.from(new Set((appsData ?? []).map((a: { student_id: string }) => a.student_id)))
       let profilesMap: Record<string, ApplicationRow['profiles']> = {}
       if (studentIds.length > 0) {
         const { data: profData } = await supabase
@@ -111,10 +119,16 @@ export default function JobsListedPage() {
         .select('job_id')
         .eq('lister_id', user.id)
       setCompletionJobIds(new Set((compData ?? []).map((c: { job_id: string }) => c.job_id)))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load jobs')
+    } finally {
       setLoading(false)
     }
-    fetch()
   }, [user])
+
+  useEffect(() => {
+    if (user) fetchData()
+  }, [user, fetchData])
 
   const handleViewApplications = (jobId: string) => {
     setSelectedJobId(jobId)
@@ -244,9 +258,12 @@ export default function JobsListedPage() {
             </div>
 
             {loading ? (
-              <div className="text-center py-16 text-white/80">
-                <p className="text-lg">Loading jobs…</p>
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <LoadingSpinner size="lg" variant="light" />
+                <p className="text-lg text-white/80">Loading jobs…</p>
               </div>
+            ) : error ? (
+              <ErrorAlert message={error} onRetry={fetchData} variant="dark" className="max-w-xl mx-auto" />
             ) : jobs.length === 0 ? (
               <div className="text-center py-16 text-white/80">
                 <p className="text-lg">No active jobs yet.</p>
@@ -346,9 +363,9 @@ export default function JobsListedPage() {
       </main>
 
       {selectedJobId && selectedJob && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleCloseModal} />
-          <div className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 md:p-8">
               <div className="flex items-center justify-between mb-6">
                 <div>
@@ -357,7 +374,8 @@ export default function JobsListedPage() {
                 </div>
                 <button
                   onClick={handleCloseModal}
-                  className="w-10 h-10 rounded-full bg-ink/5 hover:bg-ink/10 flex items-center justify-center transition-colors"
+                  className="min-w-[44px] min-h-[44px] w-10 h-10 rounded-full bg-ink/5 hover:bg-ink/10 flex items-center justify-center transition-colors"
+                  aria-label="Close"
                 >
                   <svg className="w-6 h-6 text-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -365,7 +383,7 @@ export default function JobsListedPage() {
                 </button>
               </div>
 
-              <div className="flex gap-2 mb-6 border-b border-ink/10">
+              <div className="flex gap-2 mb-6 border-b border-ink/10 overflow-x-auto">
                 <button
                   onClick={() => setActiveTab('active')}
                   className={`px-4 py-2 font-semibold transition-colors border-b-2 ${

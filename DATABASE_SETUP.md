@@ -69,6 +69,10 @@ The `supabase_schema.sql` file creates:
    - Listers can manage their jobs and applications
    - Students can view and create applications
 
+## Job payment trigger (for Stripe flow)
+
+Run `supabase_job_payment_trigger.sql` in the SQL Editor. This releases payment (deducts lister, adds to student) when both parties verify job completion.
+
 ## After Completion flow (optional)
 
 To enable the "Verify work done" flow where both lister and student confirm completion, run `supabase_after_completion_migration.sql` in the SQL Editor. This adds verification columns and triggers.
