@@ -14,21 +14,22 @@ export default function ListerDashboardPage() {
   const [showDeposit, setShowDeposit] = useState(false)
 
   const displayName = useMemo(() => {
-    // 1) Prefer name from user_metadata (set at signup)
-    const meta = (user as any)?.user_metadata
-    const metaName = [meta?.first_name, meta?.last_name].filter(Boolean).join(' ').trim()
-    if (metaName) return metaName
-
-    // 2) Fallback to profile record if available
+    // 1) Profile record (DB is canonical after signup)
     if (profile) {
       const n = [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim()
       if (n) return n
     }
-
-    // 3) Fallback to email prefix
+    // 2) user_metadata (set at signup, before profile fetched)
+    const meta = (user as any)?.user_metadata
+    const metaName = [meta?.first_name, meta?.last_name].filter(Boolean).join(' ').trim()
+    if (metaName) return metaName
+    // 3) raw_user_meta_data full_name (some auth flows)
+    const fullName = (user as any)?.raw_user_meta_data?.full_name
+    if (typeof fullName === 'string' && fullName.trim()) return fullName.trim()
+    // 4) Email prefix
     if (user?.email) {
       const prefix = user.email.split('@')[0]
-      if (prefix) return prefix
+      if (prefix) return prefix.replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
     }
     return null
   }, [user, profile])
@@ -66,12 +67,23 @@ export default function ListerDashboardPage() {
     }
 
     const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
-    if (params?.get('deposit') === 'success') {
+    const hadDepositSuccess = params?.get('deposit') === 'success'
+    if (hadDepositSuccess) {
       captureEvent('deposit_completed')
       window.history.replaceState({}, '', '/dashboard/lister')
     }
 
     fetchProfile()
+
+    if (hadDepositSuccess) {
+      const retry1 = setTimeout(() => { if (!cancelled) fetchProfile() }, 1500)
+      const retry2 = setTimeout(() => { if (!cancelled) fetchProfile() }, 3500)
+      return () => {
+        cancelled = true
+        clearTimeout(retry1)
+        clearTimeout(retry2)
+      }
+    }
 
     return () => {
       cancelled = true

@@ -13,21 +13,18 @@ export default function StudentDashboardPage() {
   const [showWithdraw, setShowWithdraw] = useState(false)
 
   const displayName = useMemo(() => {
-    // 1) Prefer name from user_metadata (set at signup)
-    const meta = (user as any)?.user_metadata
-    const metaName = [meta?.first_name, meta?.last_name].filter(Boolean).join(' ').trim()
-    if (metaName) return metaName
-
-    // 2) Fallback to profile record if available
     if (profile) {
       const n = [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim()
       if (n) return n
     }
-
-    // 3) Fallback to email prefix
+    const meta = (user as any)?.user_metadata
+    const metaName = [meta?.first_name, meta?.last_name].filter(Boolean).join(' ').trim()
+    if (metaName) return metaName
+    const fullName = (user as any)?.raw_user_meta_data?.full_name
+    if (typeof fullName === 'string' && fullName.trim()) return fullName.trim()
     if (user?.email) {
       const prefix = user.email.split('@')[0]
-      if (prefix) return prefix
+      if (prefix) return prefix.replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
     }
     return null
   }, [user, profile])

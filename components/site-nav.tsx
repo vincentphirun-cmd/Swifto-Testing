@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 
 export function SiteNav() {
   const router = useRouter()
-  const { user, signOut } = useAuth()
+  const { user, loading, signOut } = useAuth()
   const [userRole, setUserRole] = useState<'lister' | 'student' | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -52,7 +52,9 @@ export function SiteNav() {
       <Link href="/contact" className="text-base text-ink hover:text-primary transition-colors py-2 md:py-0" onClick={() => setMobileMenuOpen(false)}>
         Contact
       </Link>
-      {user ? (
+      {loading ? (
+        <span className="text-base text-ink/50 py-2 md:py-0">Loading…</span>
+      ) : user ? (
         <>
           <Link
             href={userRole === 'lister' ? '/dashboard/lister' : '/dashboard/student'}
