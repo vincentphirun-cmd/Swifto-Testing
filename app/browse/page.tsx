@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth-context'
 import { captureEvent } from '@/lib/posthog'
 import { LoadingSpinner } from '@/components/loading-spinner'
 import { ErrorAlert } from '@/components/error-alert'
+import { FeeBreakdown } from '@/components/fee-breakdown'
 
 export default function BrowseJobsPage() {
   const router = useRouter()
@@ -424,7 +425,7 @@ export default function BrowseJobsPage() {
                         </div>
                       </div>
                     </div>
-                    
+                    <FeeBreakdown price={job.priceAmount} showStripeEstimate={false} showPayoutNote className="mt-2" />
                     {/* Action buttons */}
                     <div className="flex flex-wrap gap-3 pt-2 border-t border-ink/10 justify-end">
                       {appliedJobs.has(job.id) ? (
@@ -543,6 +544,9 @@ export default function BrowseJobsPage() {
                     <p className="text-ink/60 mb-1">Pay</p>
                     <p className="font-semibold text-primary text-lg">{selectedJobData.pay}</p>
                   </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-ink/10">
+                  <FeeBreakdown price={selectedJobData.priceAmount} showStripeEstimate showPayoutNote variant="full" />
                 </div>
               </div>
 

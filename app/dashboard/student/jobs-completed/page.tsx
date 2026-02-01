@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth-context'
 import { SiteNav } from '@/components/site-nav'
 import { LoadingSpinner } from '@/components/loading-spinner'
 import { ErrorAlert } from '@/components/error-alert'
+import { FeeBreakdown } from '@/components/fee-breakdown'
 
 type CompletionRow = {
   id: string
@@ -154,10 +155,12 @@ export default function StudentJobsCompletedPage() {
                               </span>
                             </div>
                             <p className="text-2xl font-bold text-primary mb-1">${Number(c.job.price).toFixed(2)}</p>
-                            <p className="text-xs text-ink/60">Payment Received</p>
+                            <p className="text-xs text-ink/60">Job price</p>
                           </div>
                         </div>
                         <div className="border-t border-ink/10 pt-4 space-y-3">
+                          <FeeBreakdown price={c.job.price} showPayoutNote className="mb-4" />
+                          <p className="text-xs text-ink/60">Payout released after both parties verified completion.</p>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                               <p className="text-xs font-semibold text-ink/60 uppercase tracking-wide mb-1">Completed On</p>

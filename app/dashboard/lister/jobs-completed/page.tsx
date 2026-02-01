@@ -162,6 +162,31 @@ export default function ListerJobsCompletedPage() {
                           </div>
                         </div>
                         <div className="border-t border-ink/10 pt-4 space-y-3">
+                          <div className="p-4 bg-canvas/50 rounded-xl border border-ink/10">
+                            <h3 className="text-sm font-semibold text-ink mb-3">Payment receipt</h3>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-ink/70">Job</span>
+                                <span className="font-medium text-ink">{c.job.job_name}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-ink/70">Amount paid</span>
+                                <span className="font-semibold text-primary">${Number(c.job.price).toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-ink/70">Date</span>
+                                <span className="text-ink">{new Date(c.completed_at).toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-ink/70">Provider</span>
+                                <span className="text-ink">{c.studentProfile ? `${c.studentProfile.first_name} ${c.studentProfile.last_name}`.trim() : '—'}</span>
+                              </div>
+                              <div className="flex justify-between pt-1 border-t border-ink/10">
+                                <span className="text-ink/70">Swifto</span>
+                                <span className="text-ink text-xs">Payment processed via Swifto</span>
+                              </div>
+                            </div>
+                          </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                               <p className="text-xs font-semibold text-ink/60 uppercase tracking-wide mb-1">Size/Time</p>

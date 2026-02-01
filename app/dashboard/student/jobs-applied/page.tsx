@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth-context'
 import { SiteNav } from '@/components/site-nav'
 import { LoadingSpinner } from '@/components/loading-spinner'
 import { ErrorAlert } from '@/components/error-alert'
+import { FeeBreakdown } from '@/components/fee-breakdown'
 
 type ApplicationWithJob = {
   id: string
@@ -218,11 +219,12 @@ export default function JobsAppliedPage() {
                                       {app.status === 'accepted' ? 'Accepted' : 'Pending'}
                                     </span>
                                   </div>
-                                  <p className="text-2xl font-bold text-primary mb-1">${Number(app.jobs.price).toFixed(2)}</p>
-                                  <p className="text-xs text-ink/60">Payment</p>
+                                  <p className="text-xl font-bold text-primary">${Number(app.jobs.price).toFixed(2)}</p>
+                                  <p className="text-xs text-ink/60">Job price</p>
                                 </div>
                               </div>
                               <div className="border-t border-ink/10 pt-4 space-y-3">
+                                <FeeBreakdown price={app.jobs.price} showPayoutNote className="mb-4" />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   <div>
                                     <p className="text-xs font-semibold text-ink/60 uppercase tracking-wide mb-1">Size/Time</p>
@@ -295,11 +297,12 @@ export default function JobsAppliedPage() {
                                       Job filled
                                     </span>
                                   </div>
-                                  <p className="text-2xl font-bold text-primary mb-1">${Number(app.jobs.price).toFixed(2)}</p>
-                                  <p className="text-xs text-ink/60">Payment</p>
+                                  <p className="text-xl font-bold text-primary">${Number(app.jobs.price).toFixed(2)}</p>
+                                  <p className="text-xs text-ink/60">Job price</p>
                                 </div>
                               </div>
                               <div className="border-t border-ink/10 pt-4 space-y-3">
+                                <FeeBreakdown price={app.jobs.price} showPayoutNote className="mb-4" />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   <div>
                                     <p className="text-xs font-semibold text-ink/60 uppercase tracking-wide mb-1">Size/Time</p>

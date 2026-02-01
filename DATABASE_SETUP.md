@@ -73,6 +73,22 @@ The `supabase_schema.sql` file creates:
 
 Run `supabase_job_payment_trigger.sql` in the SQL Editor. This releases payment (deducts lister, adds to student) when both parties verify job completion.
 
+## Platform fee (withhold from student payout)
+
+Run `supabase_platform_fee_migration.sql` in the SQL Editor. This updates the job payment trigger to withhold the Swifto platform fee from the student payout (student receives job price minus fee).
+
+## GST fields (student profiles)
+
+Run `supabase_gst_migration.sql` in the SQL Editor. This adds `gst_registered` (boolean) and `gst_number` (text) to profiles for student tax settings.
+
+## Listing fee ($0.99 per job)
+
+Run `supabase_listing_fee_migration.sql` in the SQL Editor. This adds the `listing_fee` transaction type and the `deduct_listing_fee` function used when listers post a job.
+
+## Financial ledger (accounting export)
+
+Run `supabase_financial_ledger_migration.sql` first, then `supabase_financial_ledger_write_migration.sql`. The first creates the `financial_ledger` table. The second updates the job payout trigger and `deduct_listing_fee` to insert ledger rows. Add `ADMIN_EMAILS` to `.env.local` (comma-separated admin emails) to access `/admin/finance`.
+
 ## After Completion flow (optional)
 
 To enable the "Verify work done" flow where both lister and student confirm completion, run `supabase_after_completion_migration.sql` in the SQL Editor. This adds verification columns and triggers.

@@ -7,10 +7,14 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth-context'
 import { SiteNav } from '@/components/site-nav'
 import { captureEvent } from '@/lib/posthog'
+import { validateMinJobPrice, FEE_CONFIG } from '@/lib/fees'
+
+const LISTING_FEE_CENTS = 99
 
 export default function PostJobPage() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
+  const [balanceCents, setBalanceCents] = useState<number | null>(null)
   const [formData, setFormData] = useState({
     jobName: '',
     category: '',
@@ -29,6 +33,16 @@ export default function PostJobPage() {
       router.push('/login')
     }
   }, [user, authLoading, router])
+
+  useEffect(() => {
+    async function fetchBalance() {
+      if (!user) return
+      const supabase = createClient()
+      const { data } = await supabase.from('profiles').select('balance_cents').eq('id', user.id).single()
+      setBalanceCents(data?.balance_cents ?? 0)
+    }
+    if (user) fetchBalance()
+  }, [user])
 
   if (authLoading) {
     return (
@@ -64,31 +78,57 @@ export default function PostJobPage() {
       }
 
       const price = parseFloat(formData.price)
-      if (isNaN(price) || price < 0) {
-        setError('Please enter a valid price.')
+      const priceValidation = validateMinJobPrice(price)
+      if (!priceValidation.ok) {
+        setError(priceValidation.message || 'Please enter a valid price.')
         setSubmitting(false)
         return
       }
 
-      const { error: err } = await supabase.from('jobs').insert({
-        lister_id: user.id,
-        job_name: formData.jobName.trim(),
-        category: formData.category,
-        size_or_time: formData.sizeOrTime.trim(),
-        address: formData.address.trim(),
-        area: formData.area.trim(),
-        price,
-        completion_date: formData.isFlexible ? null : (formData.completionDate || null),
-        is_flexible: formData.isFlexible,
-        status: 'active',
+      const balance = balanceCents ?? 0
+      if (balance < LISTING_FEE_CENTS) {
+        setError(`You need at least $${FEE_CONFIG.LISTING_FEE.toFixed(2)} in your balance to list a job. Add funds from your dashboard.`)
+        setSubmitting(false)
+        return
+      }
+
+      const { data: newJob, error: insertErr } = await supabase
+        .from('jobs')
+        .insert({
+          lister_id: user.id,
+          job_name: formData.jobName.trim(),
+          category: formData.category,
+          size_or_time: formData.sizeOrTime.trim(),
+          address: formData.address.trim(),
+          area: formData.area.trim(),
+          price,
+          completion_date: formData.isFlexible ? null : (formData.completionDate || null),
+          is_flexible: formData.isFlexible,
+          status: 'active',
+        })
+        .select('id')
+        .single()
+
+      if (insertErr) {
+        setError(insertErr.message)
+        setSubmitting(false)
+        return
+      }
+
+      const { error: feeErr } = await supabase.rpc('deduct_listing_fee', {
+        p_user_id: user.id,
+        p_job_id: newJob.id,
       })
 
-      if (err) {
-        setError(err.message)
+      if (feeErr) {
+        await supabase.from('jobs').delete().eq('id', newJob.id)
+        setError(feeErr.message.includes('Insufficient') ? 'Insufficient balance. Add at least $0.99 to your balance to list a job.' : feeErr.message)
         setSubmitting(false)
+        setBalanceCents(balance)
         return
       }
 
+      setBalanceCents((prev) => (prev ?? balance) - LISTING_FEE_CENTS)
       captureEvent('job_posted', { category: formData.category, price })
       setFormData({
         jobName: '',
@@ -126,6 +166,15 @@ export default function PostJobPage() {
 
             {/* Form Card */}
             <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-ink/15 shadow-lg p-8 md:p-10 space-y-6">
+              <div className="p-4 bg-canvas/50 rounded-xl border border-ink/10 text-sm text-ink/80">
+                A ${FEE_CONFIG.LISTING_FEE.toFixed(2)} listing fee will be charged when you post this job.
+                {balanceCents !== null && balanceCents < LISTING_FEE_CENTS && (
+                  <span className="block mt-2 text-amber-700 font-medium">
+                    Your balance (${(balanceCents / 100).toFixed(2)}) is too low.{' '}
+                    <Link href="/dashboard/lister" className="text-primary hover:underline">Add funds</Link> to continue.
+                  </span>
+                )}
+              </div>
               {error && (
                 <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800 text-sm">
                   {error}
@@ -239,12 +288,13 @@ export default function PostJobPage() {
                     value={formData.price}
                     onChange={handleChange}
                     required
-                    min="0"
+                    min={FEE_CONFIG.MIN_JOB_PRICE}
                     step="0.01"
                     className="w-full pl-8 pr-4 py-3 rounded-xl border border-ink/20 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-ink"
                     placeholder="0.00"
                   />
                 </div>
+                <p className="mt-1 text-xs text-ink/60">Minimum ${FEE_CONFIG.MIN_JOB_PRICE.toFixed(2)}</p>
               </div>
 
               {/* Completion Date / Flexible */}
@@ -286,7 +336,7 @@ export default function PostJobPage() {
               <div className="pt-4">
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || (balanceCents !== null && balanceCents < LISTING_FEE_CENTS)}
                   className="w-full bg-primary text-white rounded-xl px-6 py-4 font-semibold hover:bg-secondary transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {submitting ? 'Posting…' : 'Post Job'}

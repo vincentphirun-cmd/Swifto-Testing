@@ -5,11 +5,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { SiteNav } from '@/components/site-nav'
 import { useAuth } from '@/lib/auth-context'
 import { createClient } from '@/lib/supabase/client'
+import { InfoTooltip } from '@/components/info-tooltip'
 
 type Profile = {
   first_name: string
   last_name: string
   university: string | null
+  gst_registered?: boolean
+  gst_number?: string | null
 }
 
 export default function StudentProfilePage() {
@@ -18,6 +21,8 @@ export default function StudentProfilePage() {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [university, setUniversity] = useState('')
+  const [gstRegistered, setGstRegistered] = useState(false)
+  const [gstNumber, setGstNumber] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -51,7 +56,7 @@ export default function StudentProfilePage() {
       const supabase = createClient()
       const { data } = await supabase
         .from('profiles')
-        .select('first_name, last_name, university')
+        .select('first_name, last_name, university, gst_registered, gst_number')
         .eq('id', user.id)
         .single()
       if (data) {
@@ -59,6 +64,8 @@ export default function StudentProfilePage() {
         setFirstName(data.first_name ?? '')
         setLastName(data.last_name ?? '')
         setUniversity(data.university ?? '')
+        setGstRegistered(data.gst_registered ?? false)
+        setGstNumber(data.gst_number ?? '')
       }
     }
     fetchProfile()
@@ -78,6 +85,8 @@ export default function StudentProfilePage() {
           first_name: firstName.trim() || '',
           last_name: lastName.trim() || '',
           university: university.trim() || null,
+          gst_registered: gstRegistered,
+          gst_number: gstRegistered ? (gstNumber.trim() || null) : null,
         })
         .eq('id', user.id)
       if (err) throw err
@@ -85,6 +94,8 @@ export default function StudentProfilePage() {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         university: university.trim() || null,
+        gst_registered: gstRegistered,
+        gst_number: gstRegistered ? (gstNumber.trim() || null) : null,
       })
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
@@ -165,6 +176,52 @@ export default function StudentProfilePage() {
                       className="w-full h-11 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary"
                       placeholder="e.g. University of Auckland"
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <label htmlFor="gstRegistration" className="block text-sm font-medium text-ink">
+                        GST registration
+                      </label>
+                      <InfoTooltip content="If you're GST-registered, you're responsible for GST on your total taxable activity across all work — not just Swifto." />
+                    </div>
+                    <select
+                      id="gstRegistration"
+                      value={gstRegistered ? 'registered' : 'not_registered'}
+                      onChange={(e) => setGstRegistered(e.target.value === 'registered')}
+                      className="w-full h-11 px-4 rounded-xl border border-ink/20 text-ink focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+                    >
+                      <option value="not_registered">Not GST-registered</option>
+                      <option value="registered">GST-registered</option>
+                    </select>
+                    <p className="text-xs text-ink/60">
+                      GST registration is based on your total self-employed turnover across all work (not just Swifto). If you become GST-registered, update this here.
+                    </p>
+                    {gstRegistered && (
+                      <div className="pt-2">
+                        <label htmlFor="gstNumber" className="block text-sm font-medium text-ink mb-1">
+                          GST number (optional)
+                        </label>
+                        <input
+                          id="gstNumber"
+                          type="text"
+                          value={gstNumber}
+                          onChange={(e) => setGstNumber(e.target.value)}
+                          className="w-full h-11 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary"
+                          placeholder="e.g. 12-345-678"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4 bg-canvas/50 rounded-xl border border-ink/15">
+                    <h3 className="text-sm font-semibold text-ink mb-2">Tax reminder</h3>
+                    <p className="text-sm text-ink/80">
+                      Swifto doesn&apos;t file income tax for you. You may need to declare your earnings and keep receipts for expenses.
+                    </p>
+                  </div>
+                  <div className="pt-2">
+                    <Link href="/settings/tax-gst" className="text-sm text-primary hover:text-accent transition-colors">
+                      Tax &amp; GST help →
+                    </Link>
                   </div>
                   {error && (
                     <p className="text-sm text-red-600">{error}</p>

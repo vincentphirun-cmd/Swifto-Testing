@@ -158,6 +158,11 @@ export default function ListerProfilePage() {
                   >
                     {saving ? 'Saving…' : 'Save changes'}
                   </button>
+                  <div className="pt-4">
+                    <Link href="/settings/tax-gst" className="text-sm text-primary hover:text-accent transition-colors">
+                      Tax &amp; GST help →
+                    </Link>
+                  </div>
                 </form>
 
                 {/* Name display (read-only summary) */}
