@@ -87,7 +87,11 @@ Run `supabase_listing_fee_migration.sql` in the SQL Editor. This adds the `listi
 
 ## Financial ledger (accounting export)
 
-Run `supabase_financial_ledger_migration.sql` first, then `supabase_financial_ledger_write_migration.sql`. The first creates the `financial_ledger` table. The second updates the job payout trigger and `deduct_listing_fee` to insert ledger rows. Add `ADMIN_EMAILS` to `.env.local` (comma-separated admin emails) to access `/admin/finance`.
+Run `supabase_financial_ledger_migration.sql` first, then `supabase_financial_ledger_write_migration.sql`, then `supabase_ledger_receipt_migration.sql`. The first creates the `financial_ledger` table. The second updates the job payout trigger and `deduct_listing_fee` to insert ledger rows. The third adds receipt_number/receipt_type for tax receipts. Add `ADMIN_EMAILS` to `.env.local` (comma-separated admin emails) to access `/admin/finance`.
+
+## Cancellation & rebooking
+
+Run `supabase_cancellation_rebooking_migration.sql` for student cancellation flow: `start_time`, `urgent_rebook_until` on jobs, `job_cancellations` table, `cancellation_count`/`late_cancel_count`/`total_earnings_cents` on profiles.
 
 ## After Completion flow (optional)
 

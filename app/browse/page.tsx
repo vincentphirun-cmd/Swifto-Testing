@@ -36,7 +36,7 @@ export default function BrowseJobsPage() {
       const supabase = createClient()
       const { data, error: err } = await supabase
         .from('jobs')
-        .select('id, job_name, category, size_or_time, address, area, price, completion_date, is_flexible, status, created_at')
+        .select('id, job_name, category, size_or_time, address, area, price, completion_date, is_flexible, status, created_at, urgent_rebook_until')
         .eq('status', 'active')
         .order('created_at', { ascending: false })
 
@@ -45,7 +45,9 @@ export default function BrowseJobsPage() {
         setAllJobs([])
         return
       }
-      setAllJobs((data ?? []).map(mapJobRowToBrowseJob))
+      const mapped = (data ?? []).map(mapJobRowToBrowseJob)
+      mapped.sort((a, b) => (b.urgentRebook ? 1 : 0) - (a.urgentRebook ? 1 : 0))
+      setAllJobs(mapped)
     } catch (e: unknown) {
       const isAbort = e && (
         (e instanceof Error && e.name === 'AbortError') ||
@@ -396,9 +398,16 @@ export default function BrowseJobsPage() {
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                       {/* Left side - Job name, area, date and time */}
                       <div className="flex-1 space-y-2">
-                        <h3 className="text-lg md:text-xl font-semibold text-ink">
-                          {job.name}
-                        </h3>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-lg md:text-xl font-semibold text-ink">
+                            {job.name}
+                          </h3>
+                          {job.urgentRebook && (
+                            <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full">
+                              Urgent rebook
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm md:text-base text-ink/70">
                           {job.area}
                         </p>

@@ -20,6 +20,8 @@ type JobRow = {
   price: number
   completion_date: string | null
   is_flexible: boolean
+  start_time: string | null
+  urgent_rebook_until: string | null
   status: string
   created_at: string
 }
@@ -282,6 +284,11 @@ export default function JobsListedPage() {
                       key={job.id}
                       className="bg-white rounded-2xl border border-ink/15 shadow-sm p-6 hover:shadow-xl transition-all duration-300"
                     >
+                      {(job as JobRow).urgent_rebook_until && new Date((job as JobRow).urgent_rebook_until!) > new Date() && (
+                        <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-sm">
+                          Student cancelled, we&apos;re reopening your task. Urgent rebook — boost expires in 2 hours.
+                        </div>
+                      )}
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
@@ -289,6 +296,11 @@ export default function JobsListedPage() {
                             <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full">
                               {job.category}
                             </span>
+                            {(job as JobRow).urgent_rebook_until && new Date((job as JobRow).urgent_rebook_until!) > new Date() && (
+                              <span className="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full">
+                                Urgent rebook
+                              </span>
+                            )}
                           </div>
                           <p className="text-sm text-ink/70 mb-3">{job.size_or_time}</p>
                         </div>

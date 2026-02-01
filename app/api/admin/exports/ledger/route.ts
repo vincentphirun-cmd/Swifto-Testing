@@ -77,6 +77,8 @@ export async function GET(req: NextRequest) {
       { header: 'stripe_charge_id', key: 'stripe_charge_id', width: 30 },
       { header: 'stripe_transfer_id', key: 'stripe_transfer_id', width: 30 },
       { header: 'currency', key: 'currency', width: 8 },
+      { header: 'receipt_number', key: 'receipt_number', width: 16 },
+      { header: 'receipt_type', key: 'receipt_type', width: 16 },
       { header: 'notes', key: 'notes', width: 24 },
     ]
     ws1.getRow(1).font = { bold: true }
@@ -102,6 +104,8 @@ export async function GET(req: NextRequest) {
         stripe_charge_id: r.stripe_charge_id ?? '',
         stripe_transfer_id: r.stripe_transfer_id ?? '',
         currency: r.currency ?? 'NZD',
+        receipt_number: r.receipt_number ?? '',
+        receipt_type: r.receipt_type ?? '',
         notes: r.notes ?? '',
       })
     }
@@ -204,6 +208,24 @@ export async function GET(req: NextRequest) {
         net_revenue: v.platform - v.stripe - v.refund,
         payouts_sent: v.payouts,
       })
+    }
+
+    // Sheet 5: Student_Earnings_IRD (aggregate by student for IRD reporting)
+    const byStudent: Record<string, number> = {}
+    for (const r of ledger) {
+      if (r.student_user_id && r.net_payout_to_student) {
+        const id = r.student_user_id
+        byStudent[id] = (byStudent[id] ?? 0) + Number(r.net_payout_to_student ?? 0)
+      }
+    }
+    const ws5 = workbook.addWorksheet('Student_Earnings_IRD')
+    ws5.columns = [
+      { header: 'student_user_id', key: 'student_user_id', width: 38 },
+      { header: 'total_earnings_nzd', key: 'total_earnings_nzd', width: 18 },
+    ]
+    ws5.getRow(1).font = { bold: true }
+    for (const [sid, total] of Object.entries(byStudent)) {
+      ws5.addRow({ student_user_id: sid, total_earnings_nzd: total })
     }
 
     if (format === 'csv') {

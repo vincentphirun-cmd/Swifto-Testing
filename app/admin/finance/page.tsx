@@ -164,7 +164,7 @@ export default function AdminFinancePage() {
               </div>
 
               <p className="text-sm text-ink/60">
-                The Excel workbook includes 4 sheets: Transactions, Receipts_Lister, Payouts_Students, and Daily_Summary.
+                The Excel workbook includes 5 sheets: Transactions, Receipts_Lister, Payouts_Students, Daily_Summary, and Student_Earnings_IRD (for IRD reporting).
               </p>
             </div>
 

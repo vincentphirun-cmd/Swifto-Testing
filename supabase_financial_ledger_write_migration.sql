@@ -30,6 +30,7 @@ BEGIN
       END IF;
       UPDATE profiles SET balance_cents = balance_cents - job_price_cents WHERE id = NEW.lister_id;
       UPDATE profiles SET balance_cents = balance_cents + student_payout_cents WHERE id = NEW.student_id;
+      UPDATE profiles SET total_earnings_cents = COALESCE(total_earnings_cents, 0) + student_payout_cents WHERE id = NEW.student_id;
       INSERT INTO transactions (user_id, amount_cents, type, status, job_id, job_completion_id)
       VALUES (NEW.lister_id, -job_price_cents, 'job_payment_out', 'succeeded', NEW.job_id, NEW.id);
       INSERT INTO transactions (user_id, amount_cents, type, status, job_id, job_completion_id, metadata)

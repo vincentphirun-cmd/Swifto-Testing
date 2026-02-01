@@ -8,12 +8,13 @@ import { SiteNav } from '@/components/site-nav'
 import { LoadingSpinner } from '@/components/loading-spinner'
 import { ErrorAlert } from '@/components/error-alert'
 import { FeeBreakdown } from '@/components/fee-breakdown'
+import { CancelJobModal } from '@/components/cancel-job-modal'
 
 type ApplicationWithJob = {
   id: string
   job_id: string
   student_id: string
-  status: 'pending' | 'accepted' | 'not_selected'
+  status: 'pending' | 'accepted' | 'not_selected' | 'cancelled'
   applied_at: string
   jobs: {
     job_name: string
@@ -24,6 +25,8 @@ type ApplicationWithJob = {
     price: number
     completion_date: string | null
     is_flexible: boolean
+    start_time: string | null
+    urgent_rebook_until: string | null
   } | null
   listerProfile: { first_name: string; last_name: string } | null
 }
@@ -34,6 +37,7 @@ export default function JobsAppliedPage() {
   const [awaitingStudentVerify, setAwaitingStudentVerify] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [cancelModalApp, setCancelModalApp] = useState<ApplicationWithJob | null>(null)
 
   const fetchApplications = useCallback(async () => {
       if (!user) {
@@ -61,7 +65,7 @@ export default function JobsAppliedPage() {
       const jobIds = Array.from(new Set(appsData.map((a) => a.job_id)))
       const { data: jobsData } = await supabase
         .from('jobs')
-        .select('id, job_name, category, size_or_time, address, area, price, completion_date, is_flexible, lister_id')
+        .select('id, job_name, category, size_or_time, address, area, price, completion_date, is_flexible, start_time, urgent_rebook_until, lister_id')
         .in('id', jobIds)
 
       const jobsMap: Record<string, NonNullable<typeof jobsData>[number]> = {}
@@ -112,6 +116,8 @@ export default function JobsAppliedPage() {
                 price: job.price,
                 completion_date: job.completion_date,
                 is_flexible: job.is_flexible,
+                start_time: job.start_time ?? null,
+                urgent_rebook_until: job.urgent_rebook_until ?? null,
               }
             : null,
           listerProfile: listerId ? listersMap[listerId] ?? null : null,
@@ -134,9 +140,27 @@ export default function JobsAppliedPage() {
   const formatDate = (d: string | null, flexible: boolean) =>
     flexible ? 'Flexible' : d ? new Date(d).toLocaleDateString('en-NZ', { day: 'numeric', month: 'long', year: 'numeric' }) : 'TBD'
   const activeApps = applications.filter((a) => a.status === 'pending' || a.status === 'accepted')
-  const pastApps = applications.filter((a) => a.status === 'not_selected')
+  const pastApps = applications.filter((a) => a.status === 'not_selected' || a.status === 'cancelled')
   const listerName = (p: ApplicationWithJob['listerProfile']) =>
     p ? `${p.first_name} ${p.last_name}`.trim() : '—'
+
+  const handleCancelConfirm = async (reason: string) => {
+    if (!cancelModalApp || !user) return
+    const { data: { session } } = await createClient().auth.getSession()
+    const token = session?.access_token
+    if (!token) throw new Error('Not logged in')
+    const res = await fetch('/api/jobs/cancel-application', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ application_id: cancelModalApp.id, reason }),
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      throw new Error(data.error || 'Failed to cancel')
+    }
+    setCancelModalApp(null)
+    fetchApplications()
+  }
 
   if (!user) {
     return (
@@ -193,11 +217,16 @@ export default function JobsAppliedPage() {
                             <>
                               <div className="flex items-start justify-between mb-4">
                                 <div className="flex-1">
-                                  <div className="flex items-center gap-3 mb-2">
+                                  <div className="flex items-center gap-3 mb-2 flex-wrap">
                                     <h3 className="text-2xl font-semibold text-ink">{app.jobs.job_name}</h3>
                                     <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full">
                                       {app.jobs.category}
                                     </span>
+                                    {app.status === 'pending' && app.jobs.urgent_rebook_until && new Date(app.jobs.urgent_rebook_until) > new Date() && (
+                                      <span className="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full">
+                                        Spot reopened — tap to accept
+                                      </span>
+                                    )}
                                   </div>
                                   <p className="text-sm text-ink/70 mb-2">{app.jobs.size_or_time}</p>
                                   <div className="flex items-center gap-2 text-sm text-ink/60">
@@ -243,16 +272,24 @@ export default function JobsAppliedPage() {
                                     <p className="text-sm text-ink">{listerName(app.listerProfile)}</p>
                                   </div>
                                 </div>
-                                {awaitingStudentVerify.has(app.job_id) && (
-                                  <div className="pt-2">
+                                <div className="pt-2 flex flex-wrap gap-2">
+                                  {awaitingStudentVerify.has(app.job_id) && (
                                     <Link
                                       href={`/dashboard/student/verify-completion/${app.job_id}`}
                                       className="inline-flex px-4 py-2 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors"
                                     >
                                       Verify work complete
                                     </Link>
-                                  </div>
-                                )}
+                                  )}
+                                  {app.status === 'accepted' && (
+                                    <button
+                                      onClick={() => setCancelModalApp(app)}
+                                      className="inline-flex px-4 py-2 border border-red-300 text-red-700 rounded-xl font-medium hover:bg-red-50 transition-colors"
+                                    >
+                                      Cancel job
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             </>
                           )}
@@ -293,8 +330,10 @@ export default function JobsAppliedPage() {
                                 </div>
                                 <div className="text-right">
                                   <div className="mb-2">
-                                    <span className="px-3 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded-full">
-                                      Job filled
+                                    <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                                      app.status === 'cancelled' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+                                    }`}>
+                                      {app.status === 'cancelled' ? 'Cancelled' : 'Job filled'}
                                     </span>
                                   </div>
                                   <p className="text-xl font-bold text-primary">${Number(app.jobs.price).toFixed(2)}</p>
@@ -333,6 +372,16 @@ export default function JobsAppliedPage() {
             )}
           </div>
         </section>
+
+        {cancelModalApp && (
+          <CancelJobModal
+            jobName={cancelModalApp.jobs?.job_name ?? ''}
+            listerName={listerName(cancelModalApp.listerProfile)}
+            startTime={cancelModalApp.jobs?.start_time ? new Date(cancelModalApp.jobs.start_time) : null}
+            onClose={() => setCancelModalApp(null)}
+            onConfirm={handleCancelConfirm}
+          />
+        )}
       </main>
     </>
   )

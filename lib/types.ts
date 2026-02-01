@@ -9,6 +9,7 @@ export type BrowseJob = {
   timeNeeded: string
   pay: string
   priceAmount: number
+  urgentRebook?: boolean
 }
 
 /** Raw job row from Supabase */
@@ -24,6 +25,7 @@ export type JobRow = {
   is_flexible: boolean
   status: string
   created_at: string
+  urgent_rebook_until?: string | null
 }
 
 export function mapJobRowToBrowseJob(row: JobRow): BrowseJob {
@@ -37,6 +39,7 @@ export function mapJobRowToBrowseJob(row: JobRow): BrowseJob {
         })
       : 'TBD'
   const timeOfDay = row.is_flexible ? 'Flexible' : 'To be confirmed'
+  const urgentRebook = !!(row.urgent_rebook_until && new Date(row.urgent_rebook_until) > new Date())
   return {
     id: row.id,
     name: row.job_name,
@@ -47,5 +50,6 @@ export function mapJobRowToBrowseJob(row: JobRow): BrowseJob {
     timeNeeded: row.size_or_time,
     pay: `$${Number(row.price).toFixed(0)}`,
     priceAmount: Number(row.price),
+    urgentRebook,
   }
 }

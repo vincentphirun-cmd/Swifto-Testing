@@ -23,6 +23,7 @@ export default function PostJobPage() {
     area: '',
     price: '',
     completionDate: '',
+    startTime: '09:00',
     isFlexible: false,
   })
   const [submitting, setSubmitting] = useState(false)
@@ -92,6 +93,11 @@ export default function PostJobPage() {
         return
       }
 
+      const completionDate = formData.isFlexible ? null : (formData.completionDate || null)
+      const startTime = completionDate
+        ? new Date(`${completionDate}T${formData.startTime || '09:00'}:00`).toISOString()
+        : null
+
       const { data: newJob, error: insertErr } = await supabase
         .from('jobs')
         .insert({
@@ -102,7 +108,8 @@ export default function PostJobPage() {
           address: formData.address.trim(),
           area: formData.area.trim(),
           price,
-          completion_date: formData.isFlexible ? null : (formData.completionDate || null),
+          completion_date: completionDate,
+          start_time: startTime,
           is_flexible: formData.isFlexible,
           status: 'active',
         })
@@ -138,6 +145,7 @@ export default function PostJobPage() {
         area: '',
         price: '',
         completionDate: '',
+        startTime: '09:00',
         isFlexible: false,
       })
       router.push('/dashboard/lister/jobs-listed')
@@ -316,17 +324,31 @@ export default function PostJobPage() {
                   </label>
 
                   {!formData.isFlexible && (
-                    <div>
-                      <input
-                        type="date"
-                        id="completionDate"
-                        name="completionDate"
-                        value={formData.completionDate}
-                        onChange={handleChange}
-                        required={!formData.isFlexible}
-                        min={new Date().toISOString().split('T')[0]}
-                        className="w-full px-4 py-3 rounded-xl border border-ink/20 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-ink"
-                      />
+                    <div className="space-y-3">
+                      <div>
+                        <input
+                          type="date"
+                          id="completionDate"
+                          name="completionDate"
+                          value={formData.completionDate}
+                          onChange={handleChange}
+                          required={!formData.isFlexible}
+                          min={new Date().toISOString().split('T')[0]}
+                          className="w-full px-4 py-3 rounded-xl border border-ink/20 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-ink"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="startTime" className="block text-sm text-ink/70 mb-1">Start time (for cancellation policy)</label>
+                        <input
+                          type="time"
+                          id="startTime"
+                          name="startTime"
+                          value={formData.startTime}
+                          onChange={handleChange}
+                          className="w-full px-4 py-3 rounded-xl border border-ink/20 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-ink"
+                        />
+                        <p className="mt-1 text-xs text-ink/60">Used for late-cancel rules</p>
+                      </div>
                     </div>
                   )}
                 </div>
