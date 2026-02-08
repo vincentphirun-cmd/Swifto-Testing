@@ -121,15 +121,6 @@ export default function ListerDashboardPage() {
               </button>
             </div>
 
-            {showDeposit && (
-              <DepositModal
-                onClose={() => setShowDeposit(false)}
-                onSuccess={() => {
-                  setProfile((p) => p ? { ...p } : null)
-                }}
-              />
-            )}
-
             {/* Welcome Message - Right Side */}
             <div className="mb-6 flex justify-center md:justify-end md:pr-8 -mt-8 md:-mt-12">
               <h2 className="text-white font-semibold text-2xl md:text-3xl">
@@ -158,7 +149,11 @@ export default function ListerDashboardPage() {
               {/* Deposit Card */}
               <button
                 type="button"
-                onClick={() => setShowDeposit(true)}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setShowDeposit(true)
+                }}
                 className="w-full bg-white rounded-2xl border border-ink/15 shadow-sm p-6 aspect-square flex flex-col items-center justify-center gap-4 hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-primary/50 cursor-pointer text-left"
               >
                 <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
@@ -240,6 +235,14 @@ export default function ListerDashboardPage() {
           </div>
         </section>
       </main>
+      {showDeposit && (
+        <DepositModal
+          onClose={() => setShowDeposit(false)}
+          onSuccess={() => {
+            setProfile((p) => p ? { ...p } : null)
+          }}
+        />
+      )}
     </>
   )
 }

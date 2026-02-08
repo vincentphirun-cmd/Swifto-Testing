@@ -26,7 +26,11 @@ export async function POST(req: NextRequest) {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session
     const userId = session.metadata?.user_id
-    const amountCents = session.amount_total ?? parseInt(session.metadata?.amount_cents ?? '0', 10)
+    // Prefer our metadata.amount_cents (set at checkout) so we credit exactly what we charged
+    const metaCents = session.metadata?.amount_cents != null ? parseInt(String(session.metadata.amount_cents), 10) : NaN
+    const amountCents = Number.isFinite(metaCents) && metaCents > 0
+      ? metaCents
+      : (session.amount_total ?? 0)
 
     if (!userId || !amountCents) {
       console.error('Webhook missing user_id or amount')
