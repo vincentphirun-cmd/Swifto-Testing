@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { SiteNav } from '@/components/site-nav'
 import { useAuth } from '@/lib/auth-context'
@@ -9,9 +10,11 @@ import { createClient } from '@/lib/supabase/client'
 type Profile = {
   first_name: string
   last_name: string
+  role?: 'lister' | 'student'
 }
 
 export default function ListerProfilePage() {
+  const router = useRouter()
   const { user } = useAuth()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [firstName, setFirstName] = useState('')
@@ -49,10 +52,14 @@ export default function ListerProfilePage() {
       const supabase = createClient()
       const { data } = await supabase
         .from('profiles')
-        .select('first_name, last_name')
+        .select('first_name, last_name, role')
         .eq('id', user.id)
         .single()
       if (data) {
+        if ((data as { role?: string }).role === 'student') {
+          router.replace('/profile/student')
+          return
+        }
         setProfile(data as Profile)
         setFirstName(data.first_name ?? '')
         setLastName(data.last_name ?? '')

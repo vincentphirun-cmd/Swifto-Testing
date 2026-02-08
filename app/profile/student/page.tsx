@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { SiteNav } from '@/components/site-nav'
 import { useAuth } from '@/lib/auth-context'
@@ -16,6 +17,7 @@ type Profile = {
 }
 
 export default function StudentProfilePage() {
+  const router = useRouter()
   const { user } = useAuth()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [firstName, setFirstName] = useState('')
@@ -56,10 +58,14 @@ export default function StudentProfilePage() {
       const supabase = createClient()
       const { data } = await supabase
         .from('profiles')
-        .select('first_name, last_name, university, gst_registered, gst_number')
+        .select('first_name, last_name, university, gst_registered, gst_number, role')
         .eq('id', user.id)
         .single()
       if (data) {
+        if ((data as { role?: string }).role === 'lister') {
+          router.replace('/profile/lister')
+          return
+        }
         setProfile(data as Profile)
         setFirstName(data.first_name ?? '')
         setLastName(data.last_name ?? '')

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendWithdrawalRequested } from '@/lib/email'
 
 /**
  * POST /api/stripe/request-withdrawal
@@ -44,6 +45,10 @@ export async function POST(req: NextRequest) {
       metadata: { note: 'Payout pending - Stripe Connect required for actual transfer' },
     })
 
+    const amountNzd = (amountCents / 100).toFixed(2)
+    if (user.email) {
+      sendWithdrawalRequested(user.email, `$${amountNzd}`).catch((e) => console.error('Withdrawal email error:', e))
+    }
     return NextResponse.json({ ok: true })
   } catch (e) {
     console.error('Withdrawal request error:', e)

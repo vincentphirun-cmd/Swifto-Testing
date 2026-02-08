@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendWelcome } from '@/lib/email'
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
@@ -105,6 +106,10 @@ export async function GET(request: Request) {
         return NextResponse.redirect(
           new URL(`/login?error=auth_failed&reason=profile_create_failed`, requestUrl.origin)
         )
+      }
+      // Welcome email for new account (fire-and-forget)
+      if (user.email) {
+        sendWelcome(user.email, userMetadata.first_name).catch((e) => console.error('Welcome email error:', e))
       }
     }
 

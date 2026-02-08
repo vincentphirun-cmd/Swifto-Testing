@@ -1,9 +1,37 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { SiteNav } from '@/components/site-nav'
+import { useAuth } from '@/lib/auth-context'
+import { createClient } from '@/lib/supabase/client'
 
 export default function TaxGstPage() {
+  const { user } = useAuth()
+  const [role, setRole] = useState<'lister' | 'student' | null>(null)
+
+  useEffect(() => {
+    if (!user) {
+      setRole(null)
+      return
+    }
+    const supabase = createClient()
+    supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }) => {
+        if (data?.role === 'lister' || data?.role === 'student') {
+          setRole(data.role)
+        } else {
+          setRole(user.user_metadata?.role === 'lister' ? 'lister' : user.user_metadata?.role === 'student' ? 'student' : null)
+        }
+      })
+  }, [user])
+
+  const profileLink = role === 'lister' ? '/profile/lister' : role === 'student' ? '/profile/student' : null
+
   return (
     <>
       <SiteNav />
@@ -45,24 +73,38 @@ export default function TaxGstPage() {
             </div>
 
             <div className="border-t border-ink/20 pt-12 flex flex-wrap gap-4">
-              <Link
-                href="/profile/student"
-                className="inline-flex items-center gap-2 text-primary hover:text-accent transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Student Profile
-              </Link>
-              <Link
-                href="/profile/lister"
-                className="inline-flex items-center gap-2 text-primary hover:text-accent transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Lister Profile
-              </Link>
+              {profileLink ? (
+                <Link
+                  href={profileLink}
+                  className="inline-flex items-center gap-2 text-primary hover:text-accent transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back to your profile
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    href="/profile/student"
+                    className="inline-flex items-center gap-2 text-primary hover:text-accent transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Student Profile
+                  </Link>
+                  <Link
+                    href="/profile/lister"
+                    className="inline-flex items-center gap-2 text-primary hover:text-accent transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Lister Profile
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </section>

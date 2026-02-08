@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendStudentCancelled } from '@/lib/email'
 
 export type CancelReason =
   | 'sick_emergency'
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Only accepted applications can be cancelled' }, { status: 400 })
     }
 
-    const { data: job } = await admin.from('jobs').select('id, start_time, lister_id').eq('id', app.job_id).single()
+    const { data: job } = await admin.from('jobs').select('id, job_name, start_time, lister_id').eq('id', app.job_id).single()
     const startTime = job?.start_time ? new Date(job.start_time) : null
     const hoursBefore = startTime ? (startTime.getTime() - Date.now()) / (1000 * 60 * 60) : null
 
@@ -101,6 +102,14 @@ export async function POST(req: NextRequest) {
       await admin.from('profiles').update({ late_cancel_count: ((p?.late_cancel_count as number) ?? 0) + 1 }).eq('id', user.id)
     }
 
+    const jobName = (job as { job_name?: string })?.job_name ?? 'Your job'
+    const { data: listerAuth } = await admin.auth.admin.getUserById(job!.lister_id)
+    const listerEmail = listerAuth?.user?.email
+    const { data: studentProfile } = await admin.from('profiles').select('first_name, last_name').eq('id', user.id).single()
+    const studentName = studentProfile ? [studentProfile.first_name, studentProfile.last_name].filter(Boolean).join(' ').trim() : null
+    if (listerEmail) {
+      sendStudentCancelled(listerEmail, jobName, studentName ?? 'A student').catch((e) => console.error('Cancel email error:', e))
+    }
     return NextResponse.json({ ok: true })
   } catch (e) {
     console.error('Cancel application error:', e)

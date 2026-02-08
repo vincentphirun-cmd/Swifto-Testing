@@ -156,7 +156,11 @@ export default function ListerDashboardPage() {
               </Link>
 
               {/* Deposit Card */}
-              <div className="bg-white rounded-2xl border border-ink/15 shadow-sm p-6 aspect-square flex flex-col items-center justify-center gap-4 hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-primary/50 cursor-pointer">
+              <button
+                type="button"
+                onClick={() => setShowDeposit(true)}
+                className="w-full bg-white rounded-2xl border border-ink/15 shadow-sm p-6 aspect-square flex flex-col items-center justify-center gap-4 hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-primary/50 cursor-pointer text-left"
+              >
                 <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
                   <svg className="w-12 h-12 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -166,7 +170,7 @@ export default function ListerDashboardPage() {
                   <h3 className="text-xl font-semibold text-ink">Deposit</h3>
                   <p className="text-xs text-ink/70">Add funds to your account</p>
                 </div>
-              </div>
+              </button>
 
               {/* Post a Job Card */}
               <Link 

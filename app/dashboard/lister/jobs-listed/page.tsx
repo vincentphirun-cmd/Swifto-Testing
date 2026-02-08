@@ -149,16 +149,27 @@ export default function JobsListedPage() {
     const apps = applicationsByJob[jobId] ?? []
     const otherIds = apps.filter((a) => a.id !== applicationId).map((a) => a.id)
 
-    await supabase
-      .from('job_applications')
-      .update({ status: 'accepted' })
-      .eq('id', applicationId)
-
-    if (otherIds.length > 0) {
+    const { data: { session } } = await supabase.auth.getSession()
+    let didUpdate = false
+    if (session?.access_token) {
+      const res = await fetch('/api/jobs/accept-application', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ jobId, applicationId }),
+      })
+      didUpdate = res.ok
+    }
+    if (!didUpdate) {
       await supabase
         .from('job_applications')
-        .update({ status: 'not_selected' })
-        .in('id', otherIds)
+        .update({ status: 'accepted' })
+        .eq('id', applicationId)
+      if (otherIds.length > 0) {
+        await supabase
+          .from('job_applications')
+          .update({ status: 'not_selected' })
+          .in('id', otherIds)
+      }
     }
 
     setApplicationsByJob((prev) => {

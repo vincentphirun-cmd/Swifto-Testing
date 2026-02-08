@@ -137,6 +137,20 @@ export default function PostJobPage() {
 
       setBalanceCents((prev) => (prev ?? balance) - LISTING_FEE_CENTS)
       captureEvent('job_posted', { category: formData.category, price })
+      const jobName = formData.jobName.trim()
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.access_token) {
+        fetch('/api/email/notify-new-job', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ jobId: newJob.id }),
+        }).catch(() => {})
+        fetch('/api/email/notify-listing-fee', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ jobId: newJob.id, jobName }),
+        }).catch(() => {})
+      }
       setFormData({
         jobName: '',
         category: '',

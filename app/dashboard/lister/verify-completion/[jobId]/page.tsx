@@ -111,6 +111,14 @@ export default function ListerVerifyCompletionPage() {
       return
     }
     captureEvent('completion_verified', { job_id: jobId, role: 'lister' })
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.access_token) {
+      fetch('/api/email/notify-job-completed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ jobId }),
+      }).catch(() => {})
+    }
     router.push('/dashboard/lister/jobs-listed')
   }
 

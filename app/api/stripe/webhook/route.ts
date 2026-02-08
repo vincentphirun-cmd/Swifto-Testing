@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getStripeServer } from '@/lib/stripe/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendDepositSuccess } from '@/lib/email'
 import Stripe from 'stripe'
 
 export async function POST(req: NextRequest) {
@@ -48,6 +49,11 @@ export async function POST(req: NextRequest) {
         stripe_payment_intent_id: session.payment_intent as string | null,
         metadata: { session_id: session.id },
       })
+      const amountNzd = (amountCents / 100).toFixed(2)
+      const { data: authUser } = await admin.auth.admin.getUserById(userId)
+      if (authUser?.user?.email) {
+        sendDepositSuccess(authUser.user.email, `$${amountNzd}`).catch((e) => console.error('Deposit email error:', e))
+      }
     } catch (e) {
       console.error('Webhook deposit processing error:', e)
       return NextResponse.json({ error: 'Processing failed' }, { status: 500 })

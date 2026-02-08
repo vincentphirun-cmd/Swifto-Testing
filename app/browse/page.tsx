@@ -156,12 +156,16 @@ export default function BrowseJobsPage() {
     }
     if (appliedJobs.has(jobId)) return
     setApplying(true)
-    const { error: err } = await supabase.from('job_applications').insert({
-      job_id: jobId,
-      student_id: user.id,
-      status: 'pending',
-      application_name: profile ? [profile.first_name, profile.last_name].filter(Boolean).join(' ') : null,
-    })
+    const { data: app, error: err } = await supabase
+      .from('job_applications')
+      .insert({
+        job_id: jobId,
+        student_id: user.id,
+        status: 'pending',
+        application_name: profile ? [profile.first_name, profile.last_name].filter(Boolean).join(' ') : null,
+      })
+      .select('id')
+      .single()
     setApplying(false)
     if (err) {
       if (err.code === '23505') setAppliedJobs(prev => new Set(prev).add(jobId))
@@ -170,6 +174,14 @@ export default function BrowseJobsPage() {
     }
     captureEvent('job_applied', { job_id: jobId, application_type: 'quick' })
     setAppliedJobs(prev => new Set(prev).add(jobId))
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.access_token && app?.id) {
+      fetch('/api/email/notify-application-received', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ jobId, applicationId: app.id }),
+      }).catch(() => {})
+    }
   }
 
   const handleApplyClick = (jobId: string) => {
@@ -211,14 +223,18 @@ export default function BrowseJobsPage() {
       return
     }
     setApplying(true)
-    const { error: err } = await supabase.from('job_applications').insert({
-      job_id: selectedJob,
-      student_id: user.id,
-      status: 'pending',
-      application_name: formData.name.trim(),
-      experience: formData.experience.trim(),
-      availability: formData.availability.trim(),
-    })
+    const { data: app, error: err } = await supabase
+      .from('job_applications')
+      .insert({
+        job_id: selectedJob,
+        student_id: user.id,
+        status: 'pending',
+        application_name: formData.name.trim(),
+        experience: formData.experience.trim(),
+        availability: formData.availability.trim(),
+      })
+      .select('id')
+      .single()
     setApplying(false)
     if (err) {
       if (err.code === '23505') {
@@ -231,6 +247,14 @@ export default function BrowseJobsPage() {
     }
     captureEvent('job_applied', { job_id: selectedJob, application_type: 'full' })
     setAppliedJobs(prev => new Set(prev).add(selectedJob))
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.access_token && app?.id) {
+      fetch('/api/email/notify-application-received', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ jobId: selectedJob, applicationId: app.id }),
+      }).catch(() => {})
+    }
     handleCloseModal()
   }
 
