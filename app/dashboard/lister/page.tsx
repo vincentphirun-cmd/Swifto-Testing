@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { createClient } from '@/lib/supabase/client'
 import { SiteNav } from '@/components/site-nav'
@@ -9,9 +10,14 @@ import { DepositModal } from '@/components/deposit-modal'
 import { captureEvent } from '@/lib/posthog'
 
 export default function ListerDashboardPage() {
-  const { user } = useAuth()
+  const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
   const [profile, setProfile] = useState<{ first_name: string; last_name: string; balance_cents?: number } | null>(null)
+  const [profileLoading, setProfileLoading] = useState(true)
+  const [sessionRefreshing, setSessionRefreshing] = useState(false)
+  const [depositSuccessBanner, setDepositSuccessBanner] = useState(false)
   const [showDeposit, setShowDeposit] = useState(false)
+  const depositReturnHandled = useRef(false)
 
   const displayName = useMemo(() => {
     // 1) Profile record (DB is canonical after signup)
@@ -34,15 +40,62 @@ export default function ListerDashboardPage() {
     return null
   }, [user, profile])
 
+  // After Stripe redirect, refresh auth session before treating user as logged out
+  useEffect(() => {
+    if (depositReturnHandled.current) return
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('deposit') !== 'success') return
+
+    depositReturnHandled.current = true
+    let cancelled = false
+
+    async function refreshAfterDeposit() {
+      setSessionRefreshing(true)
+      const supabase = createClient()
+      try {
+        await supabase.auth.getSession()
+        await supabase.auth.refreshSession()
+      } catch {
+        // Session may still restore via auth listener
+      }
+      if (cancelled) return
+      captureEvent('deposit_completed')
+      setDepositSuccessBanner(true)
+      window.history.replaceState({}, '', '/dashboard/lister')
+      setSessionRefreshing(false)
+    }
+
+    void refreshAfterDeposit()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (authLoading || sessionRefreshing) return
+    if (user) return
+    const returnPath =
+      typeof window !== 'undefined'
+        ? `${window.location.pathname}${window.location.search}`
+        : '/dashboard/lister'
+    router.replace(`/login?redirect=${encodeURIComponent(returnPath)}`)
+  }, [authLoading, sessionRefreshing, user, router])
+
   useEffect(() => {
     if (!user) {
-      setProfile(null)
+      if (!authLoading && !sessionRefreshing) {
+        setProfile(null)
+        setProfileLoading(false)
+      }
       return
     }
+
     let cancelled = false
     const userId = user.id
 
     async function fetchProfile() {
+      setProfileLoading(true)
       const supabase = createClient()
       const { data } = await supabase
         .from('profiles')
@@ -64,20 +117,14 @@ export default function ListerDashboardPage() {
           }
         })
       }
+      setProfileLoading(false)
     }
 
-    const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
-    const hadDepositSuccess = params?.get('deposit') === 'success'
-    if (hadDepositSuccess) {
-      captureEvent('deposit_completed')
-      window.history.replaceState({}, '', '/dashboard/lister')
-    }
+    void fetchProfile()
 
-    fetchProfile()
-
-    if (hadDepositSuccess) {
-      const retry1 = setTimeout(() => { if (!cancelled) fetchProfile() }, 1500)
-      const retry2 = setTimeout(() => { if (!cancelled) fetchProfile() }, 3500)
+    if (depositSuccessBanner) {
+      const retry1 = setTimeout(() => { if (!cancelled) void fetchProfile() }, 1500)
+      const retry2 = setTimeout(() => { if (!cancelled) void fetchProfile() }, 3500)
       return () => {
         cancelled = true
         clearTimeout(retry1)
@@ -88,7 +135,24 @@ export default function ListerDashboardPage() {
     return () => {
       cancelled = true
     }
-  }, [user?.id])
+  }, [user?.id, authLoading, sessionRefreshing, depositSuccessBanner])
+
+  const balanceLoading = authLoading || sessionRefreshing || profileLoading
+  const showDashboardContent = !authLoading && !sessionRefreshing && !!user
+  const balanceLabel = balanceLoading
+    ? 'Loading…'
+    : `$${((profile?.balance_cents ?? 0) / 100).toFixed(2)}`
+
+  if (!showDashboardContent) {
+    return (
+      <>
+        <SiteNav />
+        <main className="min-h-screen bg-primary flex items-center justify-center">
+          <p className="text-white text-lg">Loading your dashboard…</p>
+        </main>
+      </>
+    )
+  }
 
   return (
     <>
@@ -106,15 +170,22 @@ export default function ListerDashboardPage() {
                 </div>
                 <div className="text-left">
                   <p className="text-xs text-ink/60 uppercase tracking-wide font-medium">Available Balance</p>
-                  <h2 className="text-xl md:text-2xl font-bold text-ink">
-                    ${((profile?.balance_cents ?? 0) / 100).toFixed(2)}
+                  <h2 className="text-xl md:text-2xl font-bold text-ink" aria-busy={balanceLoading}>
+                    {balanceLabel}
                   </h2>
                 </div>
               </div>
+
+              {depositSuccessBanner && !balanceLoading && (
+                <p className="text-sm text-white/90 sm:max-w-md">
+                  Deposit received. Your balance has been updated.
+                </p>
+              )}
               
               {/* Deposit CTA Button */}
               <button
                 onClick={() => setShowDeposit(true)}
+                disabled={balanceLoading}
                 className="bg-white text-primary rounded-xl px-6 py-3 font-semibold hover:bg-canvas transition-all duration-300 shadow-lg hover:shadow-xl border-2 border-white/20 hover:border-white/40 whitespace-nowrap min-h-[48px]"
               >
                 Deposit Funds

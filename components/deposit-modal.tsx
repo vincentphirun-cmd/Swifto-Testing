@@ -13,11 +13,18 @@ export function DepositModal({ onClose, onSuccess }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
-    const num = parseFloat(amount)
-    if (isNaN(num) || num < 1) {
+    const form = e.currentTarget
+    const amountStr = (form.elements.namedItem('amount') as HTMLInputElement | null)?.value?.trim() ?? ''
+    const dollars = parseFloat(amountStr)
+    if (isNaN(dollars) || dollars < 1) {
+      setError('Enter at least $1')
+      return
+    }
+    const amountCents = Math.round(dollars * 100)
+    if (amountCents < 100) {
       setError('Enter at least $1')
       return
     }
@@ -36,7 +43,7 @@ export function DepositModal({ onClose, onSuccess }: Props) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ amount: num }),
+        body: JSON.stringify({ amount_cents: amountCents }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -67,6 +74,7 @@ export function DepositModal({ onClose, onSuccess }: Props) {
             </label>
             <input
               id="amount"
+              name="amount"
               type="number"
               min="1"
               step="0.01"

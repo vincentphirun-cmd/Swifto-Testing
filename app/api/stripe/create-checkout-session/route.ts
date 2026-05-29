@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getAppOrigin } from '@/lib/app-url'
 import { getStripeServer } from '@/lib/stripe/server'
 import { createClient } from '@/lib/supabase/server'
 
@@ -10,9 +11,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { amount } = await req.json()
-    const amountCents = Math.round(Number(amount) * 100)
-    if (!amountCents || amountCents < 100) {
+    const body = await req.json()
+    const amountCents = typeof body?.amount_cents === 'number' ? Math.round(body.amount_cents) : Math.round(Number(body?.amount ?? 0) * 100)
+    if (!Number.isFinite(amountCents) || amountCents < 100) {
       return NextResponse.json({ error: 'Amount must be at least $1' }, { status: 400 })
     }
 
@@ -23,9 +24,7 @@ export async function POST(req: NextRequest) {
     }
 
     const stripe = getStripeServer()
-    const origin = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : (req.headers.get('origin') || 'http://localhost:3000')
+    const origin = getAppOrigin(req)
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       payment_method_types: ['card'],

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { SiteNav } from '@/components/site-nav'
+import { PostJobLink } from '@/components/post-job-link'
 
 export default function Home() {
   const [isExpanded, setIsExpanded] = useState(false)
@@ -23,12 +24,11 @@ export default function Home() {
                   Post a task in minutes. Pay securely. Confirm when it's done.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Link 
-                    href="/signup" 
+                  <PostJobLink 
                     className="h-12 px-8 rounded-xl bg-white text-primary font-medium hover:bg-canvas transition-colors flex items-center justify-center"
                   >
                     Post a job
-                  </Link>
+                  </PostJobLink>
                   <Link 
                     href="/browse" 
                     className="h-12 px-8 rounded-xl border-2 border-white bg-transparent text-white font-medium hover:bg-white hover:text-primary transition-colors flex items-center justify-center"
@@ -320,12 +320,11 @@ export default function Home() {
             <h2 className="text-2xl md:text-3xl font-semibold mb-8">
               Ready to get something done today?
             </h2>
-            <Link 
-              href="/signup"
+            <PostJobLink 
               className="inline-block h-12 px-8 rounded-xl bg-primary text-white font-medium hover:bg-secondary transition-colors flex items-center justify-center"
             >
               Post a job
-            </Link>
+            </PostJobLink>
           </div>
         </section>
 

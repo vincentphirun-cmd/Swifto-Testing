@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
     const amountCents = Number.isFinite(metaCents) && metaCents > 0
       ? metaCents
       : (session.amount_total ?? 0)
+    console.log('[webhook] checkout.session.completed session_id:', session.id, 'metadata.amount_cents:', session.metadata?.amount_cents, '→ amountCents:', amountCents, 'userId:', userId)
 
     if (!userId || !amountCents) {
       console.error('Webhook missing user_id or amount')
@@ -39,6 +40,18 @@ export async function POST(req: NextRequest) {
 
     try {
       const admin = createAdminClient()
+      // Idempotency: don't credit the same checkout session twice
+      const { data: existing } = await admin
+        .from('transactions')
+        .select('id')
+        .eq('type', 'deposit')
+        .contains('metadata', { session_id: session.id })
+        .maybeSingle()
+      if (existing) {
+        console.log('[webhook] deposit already processed for session_id:', session.id)
+        return NextResponse.json({ received: true })
+      }
+
       const { data: profile } = await admin.from('profiles').select('balance_cents').eq('id', userId).single()
       const currentBalance = (profile?.balance_cents ?? 0) as number
       const newBalance = currentBalance + amountCents

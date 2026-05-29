@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -14,7 +13,6 @@ const LISTING_FEE_CENTS = 99
 export default function PostJobPage() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
-  const [balanceCents, setBalanceCents] = useState<number | null>(null)
   const [formData, setFormData] = useState({
     jobName: '',
     category: '',
@@ -30,32 +28,13 @@ export default function PostJobPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login')
+    if (authLoading) return
+    if (!user?.id) {
+      router.replace('/login?redirect=/dashboard/lister/post-job')
     }
-  }, [user, authLoading, router])
+  }, [user?.id, authLoading, router])
 
-  useEffect(() => {
-    async function fetchBalance() {
-      if (!user) return
-      const supabase = createClient()
-      const { data } = await supabase.from('profiles').select('balance_cents').eq('id', user.id).single()
-      setBalanceCents(data?.balance_cents ?? 0)
-    }
-    if (user) fetchBalance()
-  }, [user])
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-primary flex items-center justify-center">
-        <p className="text-white">Loading...</p>
-      </div>
-    )
-  }
-
-  if (!user) {
-    return null
-  }
+  const authReady = !authLoading && !!user?.id
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target
@@ -63,7 +42,6 @@ export default function PostJobPage() {
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
     }))
-    setError(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -86,9 +64,24 @@ export default function PostJobPage() {
         return
       }
 
-      const balance = balanceCents ?? 0
+      const { data: profileRow, error: balanceErr } = await supabase
+        .from('profiles')
+        .select('balance_cents')
+        .eq('id', user.id)
+        .single()
+
+      if (balanceErr || profileRow?.balance_cents == null) {
+        setError('Could not verify your balance. Please try again.')
+        setSubmitting(false)
+        return
+      }
+
+      const balance = profileRow.balance_cents
+
       if (balance < LISTING_FEE_CENTS) {
-        setError(`You need at least $${FEE_CONFIG.LISTING_FEE.toFixed(2)} in your balance to list a job. Add funds from your dashboard.`)
+        setError(
+          `You need at least $${FEE_CONFIG.LISTING_FEE.toFixed(2)} in your balance to list a job. Add funds from your dashboard.`
+        )
         setSubmitting(false)
         return
       }
@@ -131,11 +124,9 @@ export default function PostJobPage() {
         await supabase.from('jobs').delete().eq('id', newJob.id)
         setError(feeErr.message.includes('Insufficient') ? 'Insufficient balance. Add at least $0.99 to your balance to list a job.' : feeErr.message)
         setSubmitting(false)
-        setBalanceCents(balance)
         return
       }
 
-      setBalanceCents((prev) => (prev ?? balance) - LISTING_FEE_CENTS)
       captureEvent('job_posted', { category: formData.category, price })
       const jobName = formData.jobName.trim()
       const { data: { session } } = await supabase.auth.getSession()
@@ -170,6 +161,17 @@ export default function PostJobPage() {
     }
   }
 
+  if (!authReady) {
+    return (
+      <>
+        <SiteNav />
+        <main className="min-h-screen bg-primary flex items-center justify-center">
+          <p className="text-white text-lg">Loading…</p>
+        </main>
+      </>
+    )
+  }
+
   return (
     <>
       <SiteNav />
@@ -190,18 +192,12 @@ export default function PostJobPage() {
             <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-ink/15 shadow-lg p-8 md:p-10 space-y-6">
               <div className="p-4 bg-canvas/50 rounded-xl border border-ink/10 text-sm text-ink/80">
                 A ${FEE_CONFIG.LISTING_FEE.toFixed(2)} listing fee will be charged when you post this job.
-                {balanceCents !== null && balanceCents < LISTING_FEE_CENTS && (
-                  <span className="block mt-2 text-amber-700 font-medium">
-                    Your balance (${(balanceCents / 100).toFixed(2)}) is too low.{' '}
-                    <Link href="/dashboard/lister" className="text-primary hover:underline">Add funds</Link> to continue.
-                  </span>
-                )}
               </div>
-              {error && (
-                <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800 text-sm">
+              {error ? (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800 text-sm" role="alert">
                   {error}
                 </div>
-              )}
+              ) : null}
               {/* Job Name */}
               <div>
                 <label htmlFor="jobName" className="block text-sm font-semibold text-ink mb-2">
@@ -372,7 +368,7 @@ export default function PostJobPage() {
               <div className="pt-4">
                 <button
                   type="submit"
-                  disabled={submitting || (balanceCents !== null && balanceCents < LISTING_FEE_CENTS)}
+                  disabled={submitting}
                   className="w-full bg-primary text-white rounded-xl px-6 py-4 font-semibold hover:bg-secondary transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {submitting ? 'Posting…' : 'Post Job'}
