@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth-context'
 import { SiteNav } from '@/components/site-nav'
 import { LoadingSpinner } from '@/components/loading-spinner'
+import { StarRatingInput } from '@/components/star-rating'
 import { captureEvent } from '@/lib/posthog'
 
 export default function ListerVerifyCompletionPage() {
@@ -28,6 +29,7 @@ export default function ListerVerifyCompletionPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [alreadyVerified, setAlreadyVerified] = useState(false)
+  const [rating, setRating] = useState(0)
 
   useEffect(() => {
     async function fetchData() {
@@ -96,6 +98,10 @@ export default function ListerVerifyCompletionPage() {
 
   const handleVerify = async () => {
     if (!user || !jobId || !acceptedStudent) return
+    if (rating < 1 || rating > 5) {
+      setError('Please rate the student before confirming.')
+      return
+    }
     setSubmitting(true)
     setError(null)
     const supabase = createClient()
@@ -104,13 +110,15 @@ export default function ListerVerifyCompletionPage() {
       student_id: acceptedStudent.id,
       lister_id: user.id,
       lister_verified_at: new Date().toISOString(),
+      rating_from_lister: rating,
     })
     setSubmitting(false)
     if (err) {
       setError(err.message)
       return
     }
-    captureEvent('completion_verified', { job_id: jobId, role: 'lister' })
+    captureEvent('completion_verified', { job_id: jobId, role: 'lister', rating })
+    captureEvent('student_rated', { job_id: jobId, rating })
     const { data: { session } } = await supabase.auth.getSession()
     if (session?.access_token) {
       fetch('/api/email/notify-job-completed', {
@@ -225,13 +233,21 @@ export default function ListerVerifyCompletionPage() {
                   You have already verified this job. Awaiting student confirmation.
                 </p>
               ) : acceptedStudent ? (
-                <button
-                  onClick={handleVerify}
-                  disabled={submitting}
-                  className="w-full h-12 rounded-xl bg-primary text-white font-semibold hover:bg-secondary transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {submitting ? 'Verifying…' : 'I confirm the work has been completed'}
-                </button>
+                <div className="space-y-6">
+                  <StarRatingInput
+                    label={`Rate ${studentName}'s work`}
+                    value={rating}
+                    onChange={setRating}
+                    disabled={submitting}
+                  />
+                  <button
+                    onClick={handleVerify}
+                    disabled={submitting || rating < 1}
+                    className="w-full h-12 rounded-xl bg-primary text-white font-semibold hover:bg-secondary transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {submitting ? 'Verifying…' : 'I confirm the work has been completed'}
+                  </button>
+                </div>
               ) : (
                 <p className="text-ink/70">No accepted student for this job. Cannot verify.</p>
               )}

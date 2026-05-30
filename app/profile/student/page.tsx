@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth-context'
 import { createClient } from '@/lib/supabase/client'
 import { InfoTooltip } from '@/components/info-tooltip'
 import { ProfileIdentityNote, ProfileReadOnlyField } from '@/components/profile-read-only-field'
+import { StarRatingDisplay } from '@/components/star-rating'
 
 type Profile = {
   first_name: string
@@ -15,12 +16,15 @@ type Profile = {
   university: string | null
   gst_registered?: boolean
   gst_number?: string | null
+  rating?: number
+  total_jobs?: number
 }
 
 export default function StudentProfilePage() {
   const router = useRouter()
   const { user } = useAuth()
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [reviewCount, setReviewCount] = useState(0)
   const [gstRegistered, setGstRegistered] = useState(false)
   const [gstNumber, setGstNumber] = useState('')
   const [saving, setSaving] = useState(false)
@@ -56,7 +60,7 @@ export default function StudentProfilePage() {
       const supabase = createClient()
       const { data } = await supabase
         .from('profiles')
-        .select('first_name, last_name, university, gst_registered, gst_number, role')
+        .select('first_name, last_name, university, gst_registered, gst_number, role, rating, total_jobs')
         .eq('id', user.id)
         .single()
       if (data) {
@@ -67,6 +71,13 @@ export default function StudentProfilePage() {
         setProfile(data as Profile)
         setGstRegistered(data.gst_registered ?? false)
         setGstNumber(data.gst_number ?? '')
+
+        const { count } = await supabase
+          .from('job_completions')
+          .select('*', { count: 'exact', head: true })
+          .eq('student_id', user.id)
+          .not('rating_from_lister', 'is', null)
+        setReviewCount(count ?? 0)
       }
     }
     fetchProfile()
@@ -316,27 +327,16 @@ export default function StudentProfilePage() {
                 <div className="space-y-4">
                   <div className="text-center space-y-3">
                     <h2 className="text-lg font-semibold text-ink">Rating</h2>
-                    <div className="flex items-center justify-center gap-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <svg
-                          key={star}
-                          className={`w-8 h-8 ${
-                            star <= 4
-                              ? 'text-primary fill-primary'
-                              : 'text-ink/20 fill-ink/20'
-                          }`}
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                        </svg>
-                      ))}
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-3xl font-bold text-primary">4.0</p>
-                      <p className="text-sm text-ink/70">Based on 23 reviews</p>
-                    </div>
+                    <StarRatingDisplay
+                      rating={profile?.rating ?? 0}
+                      reviewCount={reviewCount}
+                    />
                   </div>
+                  {(profile?.total_jobs ?? 0) > 0 && (
+                    <p className="text-center text-sm text-ink/70">
+                      {profile?.total_jobs} job{profile?.total_jobs === 1 ? '' : 's'} completed on Swifto
+                    </p>
+                  )}
                 </div>
 
                 {/* Level Progress Bar */}

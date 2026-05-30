@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth-context'
 import { SiteNav } from '@/components/site-nav'
 import { LoadingSpinner } from '@/components/loading-spinner'
+import { StarRatingInput } from '@/components/star-rating'
 import { captureEvent } from '@/lib/posthog'
 
 export default function StudentVerifyCompletionPage() {
@@ -28,6 +29,7 @@ export default function StudentVerifyCompletionPage() {
   const [error, setError] = useState<string | null>(null)
   const [alreadyVerified, setAlreadyVerified] = useState(false)
   const [canVerify, setCanVerify] = useState(false)
+  const [rating, setRating] = useState(0)
 
   useEffect(() => {
     async function fetchData() {
@@ -78,12 +80,19 @@ export default function StudentVerifyCompletionPage() {
 
   const handleVerify = async () => {
     if (!user || !jobId) return
+    if (rating < 1 || rating > 5) {
+      setError('Please rate the lister before confirming.')
+      return
+    }
     setSubmitting(true)
     setError(null)
     const supabase = createClient()
     const { error: err } = await supabase
       .from('job_completions')
-      .update({ student_verified_at: new Date().toISOString() })
+      .update({
+        student_verified_at: new Date().toISOString(),
+        rating_from_student: rating,
+      })
       .eq('job_id', jobId)
       .eq('student_id', user.id)
     setSubmitting(false)
@@ -91,7 +100,8 @@ export default function StudentVerifyCompletionPage() {
       setError(err.message)
       return
     }
-    captureEvent('completion_verified', { job_id: jobId, role: 'student' })
+    captureEvent('completion_verified', { job_id: jobId, role: 'student', rating })
+    captureEvent('lister_rated', { job_id: jobId, rating })
     const { data: { session } } = await supabase.auth.getSession()
     if (session?.access_token) {
       fetch('/api/email/notify-job-completed', {
@@ -202,13 +212,21 @@ export default function StudentVerifyCompletionPage() {
                   You have already verified this job. It will appear in Jobs Completed once both parties have confirmed.
                 </p>
               ) : canVerify ? (
-                <button
-                  onClick={handleVerify}
-                  disabled={submitting}
-                  className="w-full h-12 rounded-xl bg-primary text-white font-semibold hover:bg-secondary transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {submitting ? 'Verifying…' : 'I confirm the work has been completed'}
-                </button>
+                <div className="space-y-6">
+                  <StarRatingInput
+                    label={`Rate ${listerName}`}
+                    value={rating}
+                    onChange={setRating}
+                    disabled={submitting}
+                  />
+                  <button
+                    onClick={handleVerify}
+                    disabled={submitting || rating < 1}
+                    className="w-full h-12 rounded-xl bg-primary text-white font-semibold hover:bg-secondary transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {submitting ? 'Verifying…' : 'I confirm the work has been completed'}
+                  </button>
+                </div>
               ) : (
                 <p className="text-ink/70">
                   The lister has not verified this job yet. Please wait for them to confirm before you can verify.
