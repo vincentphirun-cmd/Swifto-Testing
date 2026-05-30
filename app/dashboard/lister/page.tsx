@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { SiteNav } from '@/components/site-nav'
 import { DepositModal } from '@/components/deposit-modal'
 import { captureEvent } from '@/lib/posthog'
+import { buildFullyCompletedJobIds, type JobCompletionVerify } from '@/lib/active-jobs'
 
 export default function ListerDashboardPage() {
   const { user, loading: authLoading } = useAuth()
@@ -15,6 +16,8 @@ export default function ListerDashboardPage() {
   const [sessionRefreshing, setSessionRefreshing] = useState(false)
   const [depositSuccessBanner, setDepositSuccessBanner] = useState(false)
   const [showDeposit, setShowDeposit] = useState(false)
+  const [activeJobCount, setActiveJobCount] = useState(0)
+  const [pendingApplicationCount, setPendingApplicationCount] = useState(0)
   const depositReturnHandled = useRef(false)
 
   const displayName = useMemo(() => {
@@ -124,6 +127,55 @@ export default function ListerDashboardPage() {
       cancelled = true
     }
   }, [user?.id, authLoading, sessionRefreshing, depositSuccessBanner])
+
+  useEffect(() => {
+    async function fetchActiveCounts() {
+      if (!user) {
+        setActiveJobCount(0)
+        setPendingApplicationCount(0)
+        return
+      }
+      const supabase = createClient()
+      const { data: jobsData } = await supabase
+        .from('jobs')
+        .select('id, status')
+        .eq('lister_id', user.id)
+        .in('status', ['active', 'in_progress'])
+
+      if (!jobsData?.length) {
+        setActiveJobCount(0)
+        setPendingApplicationCount(0)
+        return
+      }
+
+      const { data: compData } = await supabase
+        .from('job_completions')
+        .select('job_id, lister_verified_at, student_verified_at')
+        .eq('lister_id', user.id)
+
+      const jobStatusMap: Record<string, string> = {}
+      for (const j of jobsData) jobStatusMap[j.id] = j.status
+      const fullyCompleted = buildFullyCompletedJobIds(
+        (compData ?? []) as JobCompletionVerify[],
+        jobStatusMap
+      )
+      const activeJobIds = jobsData.filter((j) => !fullyCompleted.has(j.id)).map((j) => j.id)
+      setActiveJobCount(activeJobIds.length)
+
+      if (activeJobIds.length === 0) {
+        setPendingApplicationCount(0)
+        return
+      }
+
+      const { count } = await supabase
+        .from('job_applications')
+        .select('*', { count: 'exact', head: true })
+        .in('job_id', activeJobIds)
+        .eq('status', 'pending')
+      setPendingApplicationCount(count ?? 0)
+    }
+    fetchActiveCounts()
+  }, [user?.id])
 
   const balanceLoading = sessionRefreshing || profileLoading
   const showDashboardContent = !sessionRefreshing && !!user
@@ -286,8 +338,14 @@ export default function ListerDashboardPage() {
                 </div>
                 <div className="text-center">
                   <h3 className="text-xl font-semibold text-ink">Active Jobs</h3>
-                  <p className="text-sm font-medium text-primary mt-1">4 active</p>
-                  <p className="text-xs text-ink/70 mt-1">2 pending</p>
+                  <p className="text-sm font-medium text-primary mt-1">
+                    {activeJobCount} active
+                  </p>
+                  {pendingApplicationCount > 0 && (
+                    <p className="text-xs text-ink/70 mt-1">
+                      {pendingApplicationCount} pending
+                    </p>
+                  )}
                 </div>
               </Link>
             </div>

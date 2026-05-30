@@ -6,11 +6,14 @@ import { useAuth } from '@/lib/auth-context'
 import { createClient } from '@/lib/supabase/client'
 import { SiteNav } from '@/components/site-nav'
 import { WithdrawModal } from '@/components/withdraw-modal'
+import { buildFullyCompletedJobIds, type JobCompletionVerify } from '@/lib/active-jobs'
 
 export default function StudentDashboardPage() {
   const { user } = useAuth()
   const [profile, setProfile] = useState<{ first_name: string; last_name: string; balance_cents?: number } | null>(null)
   const [showWithdraw, setShowWithdraw] = useState(false)
+  const [activeJobCount, setActiveJobCount] = useState(0)
+  const [pendingJobCount, setPendingJobCount] = useState(0)
 
   const displayName = useMemo(() => {
     if (profile) {
@@ -52,6 +55,50 @@ export default function StudentDashboardPage() {
       }
     }
     fetchProfile()
+  }, [user])
+
+  useEffect(() => {
+    async function fetchActiveCounts() {
+      if (!user) {
+        setActiveJobCount(0)
+        setPendingJobCount(0)
+        return
+      }
+      const supabase = createClient()
+      const { data: appsData } = await supabase
+        .from('job_applications')
+        .select('job_id, status')
+        .eq('student_id', user.id)
+        .in('status', ['pending', 'accepted'])
+
+      if (!appsData?.length) {
+        setActiveJobCount(0)
+        setPendingJobCount(0)
+        return
+      }
+
+      const jobIds = Array.from(new Set(appsData.map((a) => a.job_id)))
+      const [{ data: jobsData }, { data: compData }] = await Promise.all([
+        supabase.from('jobs').select('id, status').in('id', jobIds),
+        supabase
+          .from('job_completions')
+          .select('job_id, lister_verified_at, student_verified_at')
+          .eq('student_id', user.id)
+          .in('job_id', jobIds),
+      ])
+
+      const jobStatusMap: Record<string, string> = {}
+      for (const j of jobsData ?? []) jobStatusMap[j.id] = j.status
+      const fullyCompleted = buildFullyCompletedJobIds(
+        (compData ?? []) as JobCompletionVerify[],
+        jobStatusMap
+      )
+
+      const activeApps = appsData.filter((a) => !fullyCompleted.has(a.job_id))
+      setActiveJobCount(activeApps.length)
+      setPendingJobCount(activeApps.filter((a) => a.status === 'pending').length)
+    }
+    fetchActiveCounts()
   }, [user])
 
   return (
@@ -164,8 +211,14 @@ export default function StudentDashboardPage() {
                 </div>
                 <div className="text-center">
                   <h3 className="text-xl font-semibold text-ink">Active Jobs</h3>
-                  <p className="text-sm font-medium text-primary mt-1">3 active</p>
-                  <p className="text-xs text-ink/70 mt-1">1 pending</p>
+                  <p className="text-sm font-medium text-primary mt-1">
+                    {activeJobCount} active
+                  </p>
+                  {pendingJobCount > 0 && (
+                    <p className="text-xs text-ink/70 mt-1">
+                      {pendingJobCount} pending
+                    </p>
+                  )}
                 </div>
               </Link>
 

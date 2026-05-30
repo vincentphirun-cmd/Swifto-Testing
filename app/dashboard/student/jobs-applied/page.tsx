@@ -9,6 +9,7 @@ import { LoadingSpinner } from '@/components/loading-spinner'
 import { ErrorAlert } from '@/components/error-alert'
 import { FeeBreakdown } from '@/components/fee-breakdown'
 import { CancelJobModal } from '@/components/cancel-job-modal'
+import { buildFullyCompletedJobIds, type JobCompletionVerify } from '@/lib/active-jobs'
 
 type ApplicationWithJob = {
   id: string
@@ -27,6 +28,7 @@ type ApplicationWithJob = {
     is_flexible: boolean
     start_time: string | null
     urgent_rebook_until: string | null
+    status: string
   } | null
   listerProfile: { first_name: string; last_name: string } | null
 }
@@ -34,6 +36,7 @@ type ApplicationWithJob = {
 export default function JobsAppliedPage() {
   const { user } = useAuth()
   const [applications, setApplications] = useState<ApplicationWithJob[]>([])
+  const [fullyCompletedJobIds, setFullyCompletedJobIds] = useState<Set<string>>(new Set())
   const [awaitingStudentVerify, setAwaitingStudentVerify] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -56,6 +59,7 @@ export default function JobsAppliedPage() {
 
       if (!appsData || appsData.length === 0) {
         setApplications([])
+        setFullyCompletedJobIds(new Set())
         setAwaitingStudentVerify(new Set())
         setError(null)
         setLoading(false)
@@ -65,11 +69,23 @@ export default function JobsAppliedPage() {
       const jobIds = Array.from(new Set(appsData.map((a) => a.job_id)))
       const { data: jobsData } = await supabase
         .from('jobs')
-        .select('id, job_name, category, size_or_time, address, area, price, completion_date, is_flexible, start_time, urgent_rebook_until, lister_id')
+        .select('id, job_name, category, size_or_time, address, area, price, completion_date, is_flexible, start_time, urgent_rebook_until, lister_id, status')
         .in('id', jobIds)
 
       const jobsMap: Record<string, NonNullable<typeof jobsData>[number]> = {}
       for (const j of jobsData ?? []) jobsMap[j.id] = j
+
+      const jobStatusMap: Record<string, string> = {}
+      for (const j of jobsData ?? []) jobStatusMap[j.id] = j.status
+
+      const { data: allCompData } = await supabase
+        .from('job_completions')
+        .select('job_id, lister_verified_at, student_verified_at')
+        .eq('student_id', user.id)
+        .in('job_id', jobIds)
+
+      const completions = (allCompData ?? []) as JobCompletionVerify[]
+      setFullyCompletedJobIds(buildFullyCompletedJobIds(completions, jobStatusMap))
 
       const listerIds = Array.from(new Set((jobsData ?? []).map((j) => j.lister_id)))
       let listersMap: Record<string, { first_name: string; last_name: string }> = {}
@@ -84,13 +100,8 @@ export default function JobsAppliedPage() {
       const acceptedJobIds = appsData.filter((a) => a.status === 'accepted').map((a) => a.job_id)
       let verifyJobIds = new Set<string>()
       if (acceptedJobIds.length > 0) {
-        const { data: compData } = await supabase
-          .from('job_completions')
-          .select('job_id, lister_verified_at, student_verified_at')
-          .eq('student_id', user.id)
-          .in('job_id', acceptedJobIds)
-        for (const c of compData ?? []) {
-          if (c.lister_verified_at && !c.student_verified_at) {
+        for (const c of completions) {
+          if (acceptedJobIds.includes(c.job_id) && c.lister_verified_at && !c.student_verified_at) {
             verifyJobIds.add(c.job_id)
           }
         }
@@ -118,6 +129,7 @@ export default function JobsAppliedPage() {
                 is_flexible: job.is_flexible,
                 start_time: job.start_time ?? null,
                 urgent_rebook_until: job.urgent_rebook_until ?? null,
+                status: job.status,
               }
             : null,
           listerProfile: listerId ? listersMap[listerId] ?? null : null,
@@ -139,8 +151,16 @@ export default function JobsAppliedPage() {
 
   const formatDate = (d: string | null, flexible: boolean) =>
     flexible ? 'Flexible' : d ? new Date(d).toLocaleDateString('en-NZ', { day: 'numeric', month: 'long', year: 'numeric' }) : 'TBD'
-  const activeApps = applications.filter((a) => a.status === 'pending' || a.status === 'accepted')
-  const pastApps = applications.filter((a) => a.status === 'not_selected' || a.status === 'cancelled')
+  const isCompleted = (jobId: string) => fullyCompletedJobIds.has(jobId)
+  const activeApps = applications.filter(
+    (a) => (a.status === 'pending' || a.status === 'accepted') && !isCompleted(a.job_id)
+  )
+  const pastApps = applications.filter(
+    (a) =>
+      a.status === 'not_selected' ||
+      a.status === 'cancelled' ||
+      (a.status === 'accepted' && isCompleted(a.job_id))
+  )
   const listerName = (p: ApplicationWithJob['listerProfile']) =>
     p ? `${p.first_name} ${p.last_name}`.trim() : '—'
 
@@ -331,9 +351,17 @@ export default function JobsAppliedPage() {
                                 <div className="text-right">
                                   <div className="mb-2">
                                     <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                                      app.status === 'cancelled' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+                                      app.status === 'cancelled'
+                                        ? 'bg-red-100 text-red-800'
+                                        : app.status === 'accepted' && isCompleted(app.job_id)
+                                          ? 'bg-green-100 text-green-800'
+                                          : 'bg-gray-100 text-gray-800'
                                     }`}>
-                                      {app.status === 'cancelled' ? 'Cancelled' : 'Job filled'}
+                                      {app.status === 'cancelled'
+                                        ? 'Cancelled'
+                                        : app.status === 'accepted' && isCompleted(app.job_id)
+                                          ? 'Completed'
+                                          : 'Job filled'}
                                     </span>
                                   </div>
                                   <p className="text-xl font-bold text-primary">${Number(app.jobs.price).toFixed(2)}</p>

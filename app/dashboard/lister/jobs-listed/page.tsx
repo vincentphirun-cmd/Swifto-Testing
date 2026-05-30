@@ -8,6 +8,7 @@ import { SiteNav } from '@/components/site-nav'
 import { LoadingSpinner } from '@/components/loading-spinner'
 import { ErrorAlert } from '@/components/error-alert'
 import { isAbortError } from '@/lib/abort-error'
+import { buildFullyCompletedJobIds, type JobCompletionVerify } from '@/lib/active-jobs'
 
 type ApplicationStatus = 'pending' | 'accepted' | 'not_selected'
 
@@ -49,7 +50,7 @@ export default function JobsListedPage() {
   const { user } = useAuth()
   const [jobs, setJobs] = useState<JobRow[]>([])
   const [applicationsByJob, setApplicationsByJob] = useState<Record<string, ApplicationRow[]>>({})
-  const [completionJobIds, setCompletionJobIds] = useState<Set<string>>(new Set())
+  const [listerVerifiedJobIds, setListerVerifiedJobIds] = useState<Set<string>>(new Set())
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'active' | 'not_selected'>('active')
   const [loading, setLoading] = useState(true)
@@ -78,10 +79,25 @@ export default function JobsListedPage() {
         setLoading(false)
         return
       }
-      setError(null)
-      setJobs(jobsData ?? [])
 
-      const jobIds = (jobsData ?? []).map((j) => j.id)
+      const { data: compData } = await supabase
+        .from('job_completions')
+        .select('job_id, lister_verified_at, student_verified_at')
+        .eq('lister_id', user.id)
+
+      const completions = (compData ?? []) as JobCompletionVerify[]
+      const jobStatusMap: Record<string, string> = {}
+      for (const j of jobsData ?? []) jobStatusMap[j.id] = j.status
+      const fullyCompleted = buildFullyCompletedJobIds(completions, jobStatusMap)
+      const activeJobs = (jobsData ?? []).filter((j) => !fullyCompleted.has(j.id))
+
+      setListerVerifiedJobIds(
+        new Set(completions.filter((c) => c.lister_verified_at).map((c) => c.job_id))
+      )
+      setError(null)
+      setJobs(activeJobs)
+
+      const jobIds = activeJobs.map((j) => j.id)
       if (jobIds.length === 0) {
         setApplicationsByJob({})
         setLoading(false)
@@ -116,12 +132,6 @@ export default function JobsListedPage() {
         byJob[row.job_id] = arr
       }
       setApplicationsByJob(byJob)
-
-      const { data: compData } = await supabase
-        .from('job_completions')
-        .select('job_id')
-        .eq('lister_id', user.id)
-      setCompletionJobIds(new Set((compData ?? []).map((c: { job_id: string }) => c.job_id)))
     } catch (e) {
       if (!isAbortError(e)) {
         setError(e instanceof Error ? e.message : 'Failed to load jobs')
@@ -368,7 +378,7 @@ export default function JobsListedPage() {
                             </button>
                             {job.status === 'in_progress' &&
                               (applicationsByJob[job.id] ?? []).some((a) => a.status === 'accepted') &&
-                              !completionJobIds.has(job.id) && (
+                              !listerVerifiedJobIds.has(job.id) && (
                                 <Link
                                   href={`/dashboard/lister/verify-completion/${job.id}`}
                                   className="px-4 py-2 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors inline-flex items-center"
