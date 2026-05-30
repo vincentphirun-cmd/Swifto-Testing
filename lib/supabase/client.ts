@@ -1,6 +1,12 @@
-import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
+let browserClient: SupabaseClient | undefined
+
+/** Singleton browser client — avoids auth lock conflicts from multiple instances. */
 export function createClient(): SupabaseClient {
+  if (browserClient) return browserClient
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
@@ -10,5 +16,6 @@ export function createClient(): SupabaseClient {
     )
   }
 
-  return createSupabaseClient(supabaseUrl, supabaseAnonKey)
+  browserClient = createBrowserClient(supabaseUrl, supabaseAnonKey)
+  return browserClient
 }

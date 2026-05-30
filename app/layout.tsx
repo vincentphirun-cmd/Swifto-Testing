@@ -25,12 +25,19 @@ const abortErrorScript = `
 (function() {
   function isAbortError(err) {
     if (!err) return false;
+    if (typeof err === 'string') return err.toLowerCase().indexOf('abort') !== -1;
     if (err.name === 'AbortError') return true;
     var msg = typeof err.message === 'string' ? err.message : '';
-    return msg.indexOf('aborted') !== -1;
+    return msg.toLowerCase().indexOf('abort') !== -1;
   }
   window.addEventListener('unhandledrejection', function(e) {
     if (isAbortError(e && e.reason)) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }
+  }, true);
+  window.addEventListener('error', function(e) {
+    if (isAbortError(e && e.error)) {
       e.preventDefault();
       e.stopImmediatePropagation();
     }

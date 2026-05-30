@@ -1,6 +1,7 @@
 'use client'
 
 import { Component, ReactNode } from 'react'
+import { isAbortError } from '@/lib/abort-error'
 
 interface Props {
   children: ReactNode
@@ -18,7 +19,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   static getDerivedStateFromError(error: Error): State {
     // Suppress AbortError - it's expected during auth redirects
-    if (error?.name === 'AbortError' || error?.message?.includes('aborted')) {
+    if (isAbortError(error)) {
       return { hasError: false }
     }
     return { hasError: true }
@@ -26,7 +27,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: any) {
     // Suppress AbortError - it's expected during auth redirects
-    if (error?.name === 'AbortError' || error?.message?.includes('aborted')) {
+    if (isAbortError(error)) {
       return
     }
     console.error('ErrorBoundary caught an error:', error, errorInfo)

@@ -7,12 +7,13 @@ import { useAuth } from '@/lib/auth-context'
 import { SiteNav } from '@/components/site-nav'
 import { captureEvent } from '@/lib/posthog'
 import { validateMinJobPrice, FEE_CONFIG } from '@/lib/fees'
+import { isAbortError } from '@/lib/abort-error'
 
 const LISTING_FEE_CENTS = 99
 
 export default function PostJobPage() {
   const router = useRouter()
-  const { user, loading: authLoading } = useAuth()
+  const { user, accessToken, loading: authLoading } = useAuth()
   const [formData, setFormData] = useState({
     jobName: '',
     category: '',
@@ -25,14 +26,15 @@ export default function PostJobPage() {
     isFlexible: false,
   })
   const [submitting, setSubmitting] = useState(false)
+  const [redirecting, setRedirecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (authLoading) return
+    if (authLoading || submitting || redirecting) return
     if (!user?.id) {
       router.replace('/login?redirect=/dashboard/lister/post-job')
     }
-  }, [user?.id, authLoading, router])
+  }, [user?.id, authLoading, submitting, redirecting, router])
 
   const authReady = !authLoading && !!user?.id
 
@@ -129,39 +131,43 @@ export default function PostJobPage() {
 
       captureEvent('job_posted', { category: formData.category, price })
       const jobName = formData.jobName.trim()
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.access_token) {
-        fetch('/api/email/notify-new-job', {
+      const jobId = newJob.id
+
+      setRedirecting(true)
+      router.replace('/dashboard/lister/jobs-listed')
+
+      if (accessToken) {
+        fetch('/api/jobs/notify-after-post', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-          body: JSON.stringify({ jobId: newJob.id }),
-        }).catch(() => {})
-        fetch('/api/email/notify-listing-fee', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-          body: JSON.stringify({ jobId: newJob.id, jobName }),
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ jobId, jobName }),
+          keepalive: true,
         }).catch(() => {})
       }
-      setFormData({
-        jobName: '',
-        category: '',
-        sizeOrTime: '',
-        address: '',
-        area: '',
-        price: '',
-        completionDate: '',
-        startTime: '09:00',
-        isFlexible: false,
-      })
-      router.push('/dashboard/lister/jobs-listed')
+      return
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong.')
-    } finally {
+      if (!isAbortError(e)) {
+        setError(e instanceof Error ? e.message : 'Something went wrong.')
+      }
       setSubmitting(false)
     }
   }
 
-  if (!authReady) {
+  if (redirecting) {
+    return (
+      <>
+        <SiteNav />
+        <main className="min-h-screen bg-primary flex items-center justify-center">
+          <p className="text-white text-lg">Job posted! Opening your listings…</p>
+        </main>
+      </>
+    )
+  }
+
+  if (!authReady && !submitting) {
     return (
       <>
         <SiteNav />

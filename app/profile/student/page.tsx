@@ -7,6 +7,7 @@ import { SiteNav } from '@/components/site-nav'
 import { useAuth } from '@/lib/auth-context'
 import { createClient } from '@/lib/supabase/client'
 import { InfoTooltip } from '@/components/info-tooltip'
+import { ProfileIdentityNote, ProfileReadOnlyField } from '@/components/profile-read-only-field'
 
 type Profile = {
   first_name: string
@@ -20,9 +21,6 @@ export default function StudentProfilePage() {
   const router = useRouter()
   const { user } = useAuth()
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [university, setUniversity] = useState('')
   const [gstRegistered, setGstRegistered] = useState(false)
   const [gstNumber, setGstNumber] = useState('')
   const [saving, setSaving] = useState(false)
@@ -67,9 +65,6 @@ export default function StudentProfilePage() {
           return
         }
         setProfile(data as Profile)
-        setFirstName(data.first_name ?? '')
-        setLastName(data.last_name ?? '')
-        setUniversity(data.university ?? '')
         setGstRegistered(data.gst_registered ?? false)
         setGstNumber(data.gst_number ?? '')
       }
@@ -88,21 +83,20 @@ export default function StudentProfilePage() {
       const { error: err } = await supabase
         .from('profiles')
         .update({
-          first_name: firstName.trim() || '',
-          last_name: lastName.trim() || '',
-          university: university.trim() || null,
           gst_registered: gstRegistered,
           gst_number: gstRegistered ? (gstNumber.trim() || null) : null,
         })
         .eq('id', user.id)
       if (err) throw err
-      setProfile({
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        university: university.trim() || null,
-        gst_registered: gstRegistered,
-        gst_number: gstRegistered ? (gstNumber.trim() || null) : null,
-      })
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              gst_registered: gstRegistered,
+              gst_number: gstRegistered ? (gstNumber.trim() || null) : null,
+            }
+          : prev
+      )
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     } catch (e) {
@@ -142,47 +136,35 @@ export default function StudentProfilePage() {
                   </div>
                 </div>
 
-                {/* Editable Profile */}
-                <form onSubmit={handleSave} className="space-y-4">
-                  <div className="space-y-2">
-                    <label htmlFor="firstName" className="block text-sm font-medium text-ink">
-                      First name
-                    </label>
-                    <input
-                      id="firstName"
-                      type="text"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      className="w-full h-11 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary"
-                      placeholder="First name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="lastName" className="block text-sm font-medium text-ink">
-                      Last name
-                    </label>
-                    <input
-                      id="lastName"
-                      type="text"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      className="w-full h-11 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary"
-                      placeholder="Last name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="university" className="block text-sm font-medium text-ink">
-                      University
-                    </label>
-                    <input
-                      id="university"
-                      type="text"
-                      value={university}
-                      onChange={(e) => setUniversity(e.target.value)}
-                      className="w-full h-11 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary"
-                      placeholder="e.g. University of Auckland"
-                    />
-                  </div>
+                {/* Account details (fixed at signup) */}
+                <div className="space-y-4">
+                  <h2 className="text-sm font-semibold text-ink uppercase tracking-wide">Account information</h2>
+                  <ProfileReadOnlyField
+                    id="firstName"
+                    label="First name"
+                    value={profile?.first_name ?? ''}
+                  />
+                  <ProfileReadOnlyField
+                    id="lastName"
+                    label="Last name"
+                    value={profile?.last_name ?? ''}
+                  />
+                  <ProfileReadOnlyField
+                    id="university"
+                    label="University"
+                    value={profile?.university ?? ''}
+                  />
+                  <ProfileReadOnlyField
+                    id="email"
+                    label="Email"
+                    value={user?.email ?? ''}
+                  />
+                  <ProfileIdentityNote />
+                </div>
+
+                {/* Editable tax settings */}
+                <form onSubmit={handleSave} className="space-y-4 pt-4 border-t border-ink/10">
+                  <h2 className="text-sm font-semibold text-ink uppercase tracking-wide">Tax settings</h2>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <label htmlFor="gstRegistration" className="block text-sm font-medium text-ink">
@@ -240,25 +222,17 @@ export default function StudentProfilePage() {
                     disabled={saving}
                     className="w-full h-11 rounded-xl bg-primary text-white font-semibold hover:bg-secondary transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                   >
-                    {saving ? 'Saving…' : 'Save changes'}
+                    {saving ? 'Saving…' : 'Save tax settings'}
                   </button>
                 </form>
 
-                {/* Name display (read-only summary) */}
                 <div className="text-center pt-2">
                   <h1 className="text-2xl font-semibold tracking-tight text-ink">
                     {displayName || 'Your profile'}
                   </h1>
                 </div>
 
-                {/* Email */}
-                <div className="text-center">
-                  <p className="text-base text-ink/80">
-                    {user?.email ?? ''}
-                  </p>
-                </div>
-
-                {/* What they are Studying */}
+                {/* Field of study and below — not yet persisted */}
                 <div className="space-y-2">
                   <label htmlFor="fieldOfStudy" className="block text-lg font-semibold text-ink">
                     Field of Study

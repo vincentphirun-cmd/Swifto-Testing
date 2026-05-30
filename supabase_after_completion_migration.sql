@@ -19,9 +19,8 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- Drop existing trigger if it exists (for re-running migration)
 DROP TRIGGER IF EXISTS trigger_mark_job_completed ON job_completions;
 
 CREATE TRIGGER trigger_mark_job_completed

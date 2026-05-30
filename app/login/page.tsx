@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth-context'
 import { SiteNav } from '@/components/site-nav'
 import { captureEvent } from '@/lib/posthog'
+import { fetchUserRole, pickPostLoginPath } from '@/lib/user-role'
 
 function LoginContent() {
   const router = useRouter()
@@ -37,20 +38,13 @@ function LoginContent() {
     if (!user) return
 
     const redirectTo = searchParams.get('redirect')
-    const safeRedirect = redirectTo?.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : null
-    if (safeRedirect) {
-      router.replace(safeRedirect)
-      return
-    }
-
-    const supabase = createClient()
     let cancelled = false
     void (async () => {
       try {
-        const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+        const supabase = createClient()
+        const role = await fetchUserRole(supabase, user)
         if (cancelled) return
-        if (data?.role === 'lister') router.replace('/dashboard/lister')
-        else router.replace('/dashboard/student')
+        router.replace(pickPostLoginPath(role, redirectTo))
       } catch {
         if (!cancelled) router.replace('/dashboard/student')
       }
@@ -90,23 +84,8 @@ function LoginContent() {
       if (data.user) {
         captureEvent('logged_in')
         const redirectTo = searchParams.get('redirect')
-        const safeRedirect = redirectTo?.startsWith('/') && !redirectTo.startsWith('//')
-          ? redirectTo
-          : null
-        if (safeRedirect) {
-          router.replace(safeRedirect)
-          return
-        }
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', data.user.id)
-          .single()
-        if (profile?.role === 'lister') {
-          router.replace('/dashboard/lister')
-        } else {
-          router.replace('/dashboard/student')
-        }
+        const role = await fetchUserRole(supabase, data.user)
+        router.replace(pickPostLoginPath(role, redirectTo))
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong.')

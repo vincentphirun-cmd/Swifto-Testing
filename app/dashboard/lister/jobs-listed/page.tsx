@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth-context'
 import { SiteNav } from '@/components/site-nav'
 import { LoadingSpinner } from '@/components/loading-spinner'
 import { ErrorAlert } from '@/components/error-alert'
+import { isAbortError } from '@/lib/abort-error'
 
 type ApplicationStatus = 'pending' | 'accepted' | 'not_selected'
 
@@ -122,7 +123,9 @@ export default function JobsListedPage() {
         .eq('lister_id', user.id)
       setCompletionJobIds(new Set((compData ?? []).map((c: { job_id: string }) => c.job_id)))
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load jobs')
+      if (!isAbortError(e)) {
+        setError(e instanceof Error ? e.message : 'Failed to load jobs')
+      }
     } finally {
       setLoading(false)
     }
@@ -492,7 +495,7 @@ export default function JobsListedPage() {
                           <span className="text-xs text-ink/60">{formatSince(p?.member_since ?? '')}</span>
                         </div>
 
-                        {activeTab === 'active' && (
+                        {activeTab === 'active' && !isAccepted && (
                           <div className="flex gap-3 mt-4 pt-4 border-t border-ink/10">
                             <button
                               onClick={() => handleAccept(selectedJobId, app.id)}
@@ -501,17 +504,15 @@ export default function JobsListedPage() {
                                 canAccept && !updating ? 'bg-primary text-white hover:bg-secondary' : 'bg-ink/10 text-ink/40 cursor-not-allowed'
                               }`}
                             >
-                              {isAccepted ? 'Accepted' : jobHasAccepted ? 'Another student accepted' : updating ? 'Updating…' : 'Accept'}
+                              {jobHasAccepted ? 'Another student accepted' : updating ? 'Updating…' : 'Accept'}
                             </button>
-                            {!isAccepted && (
-                              <button
-                                onClick={() => handleDecline(selectedJobId, app.id)}
-                                disabled={updating}
-                                className="flex-1 bg-canvas text-ink rounded-xl px-4 py-2.5 font-semibold hover:bg-ink/5 transition-colors disabled:opacity-70"
-                              >
-                                Decline
-                              </button>
-                            )}
+                            <button
+                              onClick={() => handleDecline(selectedJobId, app.id)}
+                              disabled={updating}
+                              className="flex-1 bg-canvas text-ink rounded-xl px-4 py-2.5 font-semibold hover:bg-ink/5 transition-colors disabled:opacity-70"
+                            >
+                              Decline
+                            </button>
                           </div>
                         )}
                       </div>

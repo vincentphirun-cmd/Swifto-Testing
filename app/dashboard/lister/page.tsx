@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { createClient } from '@/lib/supabase/client'
@@ -10,7 +9,6 @@ import { DepositModal } from '@/components/deposit-modal'
 import { captureEvent } from '@/lib/posthog'
 
 export default function ListerDashboardPage() {
-  const router = useRouter()
   const { user, loading: authLoading } = useAuth()
   const [profile, setProfile] = useState<{ first_name: string; last_name: string; balance_cents?: number } | null>(null)
   const [profileLoading, setProfileLoading] = useState(true)
@@ -73,16 +71,6 @@ export default function ListerDashboardPage() {
   }, [])
 
   useEffect(() => {
-    if (authLoading || sessionRefreshing) return
-    if (user) return
-    const returnPath =
-      typeof window !== 'undefined'
-        ? `${window.location.pathname}${window.location.search}`
-        : '/dashboard/lister'
-    router.replace(`/login?redirect=${encodeURIComponent(returnPath)}`)
-  }, [authLoading, sessionRefreshing, user, router])
-
-  useEffect(() => {
     if (!user) {
       if (!authLoading && !sessionRefreshing) {
         setProfile(null)
@@ -137,8 +125,8 @@ export default function ListerDashboardPage() {
     }
   }, [user?.id, authLoading, sessionRefreshing, depositSuccessBanner])
 
-  const balanceLoading = authLoading || sessionRefreshing || profileLoading
-  const showDashboardContent = !authLoading && !sessionRefreshing && !!user
+  const balanceLoading = sessionRefreshing || profileLoading
+  const showDashboardContent = !sessionRefreshing && !!user
   const balanceLabel = balanceLoading
     ? 'Loading…'
     : `$${((profile?.balance_cents ?? 0) / 100).toFixed(2)}`

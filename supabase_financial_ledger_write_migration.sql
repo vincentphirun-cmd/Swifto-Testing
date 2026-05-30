@@ -52,7 +52,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Add unique constraint on idempotency_key if not exists (for ON CONFLICT)
 -- The table already has UNIQUE on idempotency_key from the migration

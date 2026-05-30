@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { SiteNav } from '@/components/site-nav'
 import { useAuth } from '@/lib/auth-context'
 import { createClient } from '@/lib/supabase/client'
+import { ProfileIdentityNote, ProfileReadOnlyField } from '@/components/profile-read-only-field'
 
 type Profile = {
   first_name: string
@@ -17,11 +18,6 @@ export default function ListerProfilePage() {
   const router = useRouter()
   const { user } = useAuth()
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
 
   const displayName = useMemo(() => {
     // 1) Prefer name from user_metadata
@@ -61,38 +57,10 @@ export default function ListerProfilePage() {
           return
         }
         setProfile(data as Profile)
-        setFirstName(data.first_name ?? '')
-        setLastName(data.last_name ?? '')
       }
     }
     fetchProfile()
-  }, [user])
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!user) return
-    setError(null)
-    setSuccess(false)
-    setSaving(true)
-    try {
-      const supabase = createClient()
-      const { error: err } = await supabase
-        .from('profiles')
-        .update({
-          first_name: firstName.trim() || '',
-          last_name: lastName.trim() || '',
-        })
-        .eq('id', user.id)
-      if (err) throw err
-      setProfile({ first_name: firstName.trim(), last_name: lastName.trim() })
-      setSuccess(true)
-      setTimeout(() => setSuccess(false), 3000)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to save')
-    } finally {
-      setSaving(false)
-    }
-  }
+  }, [user, router])
 
   return (
     <>
@@ -124,69 +92,39 @@ export default function ListerProfilePage() {
                   </div>
                 </div>
 
-                {/* Editable Profile */}
-                <form onSubmit={handleSave} className="space-y-4">
-                  <div className="space-y-2">
-                    <label htmlFor="firstName" className="block text-sm font-medium text-ink">
-                      First name
-                    </label>
-                    <input
-                      id="firstName"
-                      type="text"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      className="w-full h-11 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary"
-                      placeholder="First name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="lastName" className="block text-sm font-medium text-ink">
-                      Last name
-                    </label>
-                    <input
-                      id="lastName"
-                      type="text"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      className="w-full h-11 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary"
-                      placeholder="Last name"
-                    />
-                  </div>
-                  {error && (
-                    <p className="text-sm text-red-600">{error}</p>
-                  )}
-                  {success && (
-                    <p className="text-sm text-green-600">Profile saved successfully.</p>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="w-full h-11 rounded-xl bg-primary text-white font-semibold hover:bg-secondary transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    {saving ? 'Saving…' : 'Save changes'}
-                  </button>
-                  <div className="pt-4">
+                {/* Account details (fixed at signup) */}
+                <div className="space-y-4">
+                  <h2 className="text-sm font-semibold text-ink uppercase tracking-wide">Account information</h2>
+                  <ProfileReadOnlyField
+                    id="firstName"
+                    label="First name"
+                    value={profile?.first_name ?? ''}
+                  />
+                  <ProfileReadOnlyField
+                    id="lastName"
+                    label="Last name"
+                    value={profile?.last_name ?? ''}
+                  />
+                  <ProfileReadOnlyField
+                    id="email"
+                    label="Email"
+                    value={user?.email ?? ''}
+                  />
+                  <ProfileIdentityNote />
+                  <div className="pt-2">
                     <Link href="/settings/tax-gst" className="text-sm text-primary hover:text-accent transition-colors">
                       Tax &amp; GST help →
                     </Link>
                   </div>
-                </form>
+                </div>
 
-                {/* Name display (read-only summary) */}
                 <div className="text-center pt-2">
                   <h1 className="text-2xl font-semibold tracking-tight text-ink">
                     {displayName || 'Your profile'}
                   </h1>
                 </div>
 
-                {/* Email */}
-                <div className="text-center">
-                  <p className="text-base text-ink/80">
-                    {user?.email ?? ''}
-                  </p>
-                </div>
-
-                {/* Location */}
+                {/* Location and below — not yet persisted */}
                 <div className="space-y-2">
                   <label htmlFor="location" className="block text-lg font-semibold text-ink">
                     Location

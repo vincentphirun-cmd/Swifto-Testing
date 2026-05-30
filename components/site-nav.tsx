@@ -35,7 +35,7 @@ export function SiteNav() {
 
   const handleLogout = async () => {
     await signOut()
-    router.push('/')
+    router.push('/login')
   }
 
   const navLinks = (

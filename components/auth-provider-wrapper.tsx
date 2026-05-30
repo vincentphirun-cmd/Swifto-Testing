@@ -4,13 +4,13 @@ import { useEffect } from 'react'
 import { AuthProvider } from '@/lib/auth-context'
 import { ErrorBoundary } from './error-boundary'
 import { PostHogProvider } from './posthog-provider'
+import { isAbortError } from '@/lib/abort-error'
 
 export function AuthProviderWrapper({ children }: { children: React.ReactNode }) {
   // Global handler for unhandled promise rejections (AbortError from Supabase)
   useEffect(() => {
     const handleRejection = (e: PromiseRejectionEvent) => {
-      const err = e?.reason
-      if (err?.name === 'AbortError' || (typeof err?.message === 'string' && err.message.includes('aborted'))) {
+      if (isAbortError(e?.reason)) {
         e.preventDefault()
         e.stopImmediatePropagation()
       }
