@@ -1,17 +1,33 @@
 -- Platform Fee Migration
 -- Withhold Swifto platform fee from student payout on job completion.
--- Fee model: P<=60: min(5, round(P*0.08+0.40,2)); P>60: round(5+0.04*(P-60),2)
+-- Fee model: $0.99 processing allocation + 5% of (price - $0.99)
+
+CREATE OR REPLACE FUNCTION get_swifto_service_fee_nzd(price_nzd NUMERIC)
+RETURNS NUMERIC
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+DECLARE
+  remainder NUMERIC;
+BEGIN
+  IF price_nzd <= 0 THEN
+    RETURN 0;
+  END IF;
+  remainder := price_nzd - 0.99;
+  IF remainder <= 0 THEN
+    RETURN 0;
+  END IF;
+  RETURN ROUND((remainder * 0.05)::numeric, 2);
+END;
+$$;
 
 CREATE OR REPLACE FUNCTION get_platform_fee_nzd(price_nzd NUMERIC)
 RETURNS NUMERIC AS $$
 BEGIN
   IF price_nzd <= 0 THEN
     RETURN 0;
-  ELSIF price_nzd <= 60 THEN
-    RETURN LEAST(5.00, ROUND((price_nzd * 0.08 + 0.40)::numeric, 2));
-  ELSE
-    RETURN ROUND((5.00 + 0.04 * (price_nzd - 60))::numeric, 2);
   END IF;
+  RETURN ROUND((0.99 + get_swifto_service_fee_nzd(price_nzd))::numeric, 2);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 

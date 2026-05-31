@@ -1,7 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { getPlatformFee, getStudentPayoutEstimate, getStripeFeeEstimate } from '@/lib/fees'
+import {
+  getProcessingFeeAllocation,
+  getSwiftoServiceFee,
+  getStudentPayoutEstimate,
+  getStripeFeeEstimate,
+  FEE_CONFIG,
+} from '@/lib/fees'
 
 interface FeeBreakdownProps {
   /** Job price in NZD */
@@ -10,6 +16,8 @@ interface FeeBreakdownProps {
   showStripeEstimate?: boolean
   /** Show payout release note (for student views) */
   showPayoutNote?: boolean
+  /** Show note that processing fee is paid by lister at post */
+  showProcessingNote?: boolean
   /** Compact mode for cards (single line + expand) vs full for modal */
   variant?: 'compact' | 'full'
   className?: string
@@ -19,11 +27,13 @@ export function FeeBreakdown({
   price,
   showStripeEstimate = false,
   showPayoutNote = false,
+  showProcessingNote = false,
   variant = 'compact',
   className = '',
 }: FeeBreakdownProps) {
-  const [expanded, setExpanded] = useState(false)
-  const platformFee = getPlatformFee(price)
+  const [expanded, setExpanded] = useState(variant === 'full')
+  const processingFee = getProcessingFeeAllocation(price)
+  const swiftoFee = getSwiftoServiceFee(price)
   const payout = getStudentPayoutEstimate(price)
   const stripeEst = showStripeEstimate ? getStripeFeeEstimate(price) : 0
 
@@ -31,18 +41,20 @@ export function FeeBreakdown({
     <div className={className}>
       <p className="text-sm font-medium text-ink">You&apos;ll earn</p>
       <p className="text-sm text-ink/80">
-        <span className="font-semibold text-primary">${payout.toFixed(2)}</span> after Swifto fees
+        <span className="font-semibold text-primary">${payout.toFixed(2)}</span> after fees
       </p>
       {showPayoutNote && (
-        <p className="text-xs text-ink/60 mt-1">Payouts are released after the lister approves completion.</p>
+        <p className="text-xs text-ink/60 mt-1">Payouts are released after both parties verify completion.</p>
       )}
-      <button
-        type="button"
-        onClick={() => setExpanded(!expanded)}
-        className="mt-1 text-xs text-primary hover:text-accent transition-colors font-medium"
-      >
-        {expanded ? 'Hide breakdown' : 'Show fee breakdown'}
-      </button>
+      {variant === 'compact' && (
+        <button
+          type="button"
+          onClick={() => setExpanded(!expanded)}
+          className="mt-1 text-xs text-primary hover:text-accent transition-colors font-medium"
+        >
+          {expanded ? 'Hide breakdown' : 'Show fee breakdown'}
+        </button>
+      )}
       {expanded && (
         <div className="mt-2 p-3 bg-canvas/50 rounded-lg border border-ink/10 text-xs space-y-1.5">
           <div className="flex justify-between">
@@ -50,11 +62,20 @@ export function FeeBreakdown({
             <span className="font-medium text-ink">${price.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-ink/70">Swifto fee</span>
-            <span className="font-medium text-ink">−${platformFee.toFixed(2)}</span>
+            <span className="text-ink/70">Processing fee</span>
+            <span className="font-medium text-ink">−${processingFee.toFixed(2)}</span>
+          </div>
+          {showProcessingNote && (
+            <p className="text-[10px] text-ink/50 italic">
+              Processing fee is charged to the lister when the job is posted.
+            </p>
+          )}
+          <div className="flex justify-between">
+            <span className="text-ink/70">Swifto fee ({(FEE_CONFIG.SWIFTO_FEE_RATE * 100).toFixed(0)}%)</span>
+            <span className="font-medium text-ink">−${swiftoFee.toFixed(2)}</span>
           </div>
           <div className="flex justify-between pt-1 border-t border-ink/10">
-            <span className="text-ink/70">Estimated payout</span>
+            <span className="text-ink/70">Your earnings</span>
             <span className="font-semibold text-primary">${payout.toFixed(2)}</span>
           </div>
           {showStripeEstimate && stripeEst > 0 && (
