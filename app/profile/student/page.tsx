@@ -17,7 +17,7 @@ import {
   type ProfileCompletionJob,
 } from '@/lib/profile-completions'
 import { getAccountIdentity } from '@/lib/profile-account-identity'
-import { fetchRatingSummary, type RatingSummary } from '@/lib/ratings'
+import { summarizeRatings } from '@/lib/ratings'
 
 type Profile = {
   first_name: string
@@ -37,10 +37,6 @@ export default function StudentProfilePage() {
   const router = useRouter()
   const { user } = useAuth()
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [ratingSummary, setRatingSummary] = useState<RatingSummary>({
-    averageRating: 0,
-    reviewCount: 0,
-  })
   const [completedJobs, setCompletedJobs] = useState<ProfileCompletionJob[]>([])
   const [jobsLoading, setJobsLoading] = useState(true)
   const [gstRegistered, setGstRegistered] = useState(false)
@@ -83,6 +79,11 @@ export default function StudentProfilePage() {
     return 'User'
   }, [accountIdentity, user])
 
+  const ratingSummary = useMemo(
+    () => summarizeRatings(completedJobs.map((job) => job.rating_from_lister)),
+    [completedJobs]
+  )
+
   useEffect(() => {
     async function fetchProfile() {
       if (!user) {
@@ -109,13 +110,10 @@ export default function StudentProfilePage() {
         setInterests(data.interests ?? '')
         setAcademicAchievements(data.academic_achievements ?? '')
         setExtracurricularAchievements(data.extracurricular_achievements ?? '')
-
-        const summary = await fetchRatingSummary(supabase, user.id, 'student')
-        setRatingSummary(summary)
       }
     }
     fetchProfile()
-  }, [user])
+  }, [user, router])
 
   useEffect(() => {
     async function loadCompletions() {

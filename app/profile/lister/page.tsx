@@ -15,7 +15,7 @@ import {
   type ProfileCompletionJob,
 } from '@/lib/profile-completions'
 import { getAccountIdentity } from '@/lib/profile-account-identity'
-import { fetchRatingSummary, type RatingSummary } from '@/lib/ratings'
+import { summarizeRatings } from '@/lib/ratings'
 
 type Profile = {
   first_name: string
@@ -31,10 +31,6 @@ export default function ListerProfilePage() {
   const router = useRouter()
   const { user } = useAuth()
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [ratingSummary, setRatingSummary] = useState<RatingSummary>({
-    averageRating: 0,
-    reviewCount: 0,
-  })
   const [completedJobsCount, setCompletedJobsCount] = useState(0)
   const [completedJobs, setCompletedJobs] = useState<ProfileCompletionJob[]>([])
   const [jobsLoading, setJobsLoading] = useState(true)
@@ -70,6 +66,11 @@ export default function ListerProfilePage() {
     return 'User'
   }, [accountIdentity, user])
 
+  const ratingSummary = useMemo(
+    () => summarizeRatings(completedJobs.map((job) => job.rating_from_student)),
+    [completedJobs]
+  )
+
   useEffect(() => {
     async function fetchProfile() {
       if (!user) {
@@ -92,9 +93,6 @@ export default function ListerProfilePage() {
         setBio(data.bio ?? '')
         setInterests(data.interests ?? '')
         setPreferredJobCategories(data.preferred_job_categories ?? '')
-
-        const summary = await fetchRatingSummary(supabase, user.id, 'lister')
-        setRatingSummary(summary)
       }
     }
     fetchProfile()

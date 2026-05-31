@@ -14,6 +14,16 @@ function average(values: number[]): number {
   return round1(values.reduce((sum, v) => sum + v, 0) / values.length)
 }
 
+export function summarizeRatings(values: (number | null | undefined)[]): RatingSummary {
+  const ratings = values
+    .map((v) => (v == null ? NaN : Number(v)))
+    .filter((n) => Number.isFinite(n))
+  return {
+    averageRating: average(ratings),
+    reviewCount: ratings.length,
+  }
+}
+
 /** Live average rating for a student or lister from job_completions. */
 export async function fetchRatingSummary(
   supabase: SupabaseClient,
