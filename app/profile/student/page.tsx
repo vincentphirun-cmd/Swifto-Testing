@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth-context'
 import { createClient } from '@/lib/supabase/client'
 import { InfoTooltip } from '@/components/info-tooltip'
 import { ProfileIdentityNote, ProfileReadOnlyField } from '@/components/profile-read-only-field'
+import { ProfileEditableSection } from '@/components/profile-editable-section'
 import { StarRatingDisplay } from '@/components/star-rating'
 import { ProfileJobHistoryList } from '@/components/profile-job-history'
 import {
@@ -23,6 +24,10 @@ type Profile = {
   university: string | null
   gst_registered?: boolean
   gst_number?: string | null
+  field_of_study?: string | null
+  interests?: string | null
+  academic_achievements?: string | null
+  extracurricular_achievements?: string | null
   total_jobs?: number
   total_earnings_cents?: number
 }
@@ -39,9 +44,24 @@ export default function StudentProfilePage() {
   const [jobsLoading, setJobsLoading] = useState(true)
   const [gstRegistered, setGstRegistered] = useState(false)
   const [gstNumber, setGstNumber] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
+  const [fieldOfStudy, setFieldOfStudy] = useState('')
+  const [interests, setInterests] = useState('')
+  const [academicAchievements, setAcademicAchievements] = useState('')
+  const [extracurricularAchievements, setExtracurricularAchievements] = useState('')
+  const [taxEditing, setTaxEditing] = useState(false)
+  const [detailsEditing, setDetailsEditing] = useState(false)
+  const [draftGstRegistered, setDraftGstRegistered] = useState(false)
+  const [draftGstNumber, setDraftGstNumber] = useState('')
+  const [draftFieldOfStudy, setDraftFieldOfStudy] = useState('')
+  const [draftInterests, setDraftInterests] = useState('')
+  const [draftAcademicAchievements, setDraftAcademicAchievements] = useState('')
+  const [draftExtracurricularAchievements, setDraftExtracurricularAchievements] = useState('')
+  const [taxSaving, setTaxSaving] = useState(false)
+  const [detailsSaving, setDetailsSaving] = useState(false)
+  const [taxError, setTaxError] = useState<string | null>(null)
+  const [detailsError, setDetailsError] = useState<string | null>(null)
+  const [taxSuccess, setTaxSuccess] = useState(false)
+  const [detailsSuccess, setDetailsSuccess] = useState(false)
 
   const displayName = useMemo(() => {
     // 1) Prefer name from user_metadata
@@ -72,7 +92,9 @@ export default function StudentProfilePage() {
       const supabase = createClient()
       const { data } = await supabase
         .from('profiles')
-        .select('first_name, last_name, university, gst_registered, gst_number, role, total_jobs, total_earnings_cents')
+        .select(
+          'first_name, last_name, university, gst_registered, gst_number, field_of_study, interests, academic_achievements, extracurricular_achievements, role, total_jobs, total_earnings_cents'
+        )
         .eq('id', user.id)
         .single()
       if (data) {
@@ -83,6 +105,10 @@ export default function StudentProfilePage() {
         setProfile(data as Profile)
         setGstRegistered(data.gst_registered ?? false)
         setGstNumber(data.gst_number ?? '')
+        setFieldOfStudy(data.field_of_study ?? '')
+        setInterests(data.interests ?? '')
+        setAcademicAchievements(data.academic_achievements ?? '')
+        setExtracurricularAchievements(data.extracurricular_achievements ?? '')
 
         const summary = await fetchRatingSummary(supabase, user.id, 'student')
         setRatingSummary(summary)
@@ -118,37 +144,98 @@ export default function StudentProfilePage() {
     return sumStudentPayoutsFromCompletions(completedJobs)
   }, [profile?.total_earnings_cents, completedJobs])
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const startTaxEdit = () => {
+    setDraftGstRegistered(gstRegistered)
+    setDraftGstNumber(gstNumber)
+    setTaxError(null)
+    setTaxSuccess(false)
+    setTaxEditing(true)
+  }
+
+  const cancelTaxEdit = () => {
+    setTaxEditing(false)
+    setTaxError(null)
+  }
+
+  const handleSaveTax = async () => {
     if (!user) return
-    setError(null)
-    setSuccess(false)
-    setSaving(true)
+    setTaxError(null)
+    setTaxSuccess(false)
+    setTaxSaving(true)
     try {
       const supabase = createClient()
+      const nextGstNumber = draftGstRegistered ? draftGstNumber.trim() || null : null
       const { error: err } = await supabase
         .from('profiles')
         .update({
-          gst_registered: gstRegistered,
-          gst_number: gstRegistered ? (gstNumber.trim() || null) : null,
+          gst_registered: draftGstRegistered,
+          gst_number: nextGstNumber,
         })
         .eq('id', user.id)
       if (err) throw err
+      setGstRegistered(draftGstRegistered)
+      setGstNumber(draftGstNumber)
       setProfile((prev) =>
         prev
           ? {
               ...prev,
-              gst_registered: gstRegistered,
-              gst_number: gstRegistered ? (gstNumber.trim() || null) : null,
+              gst_registered: draftGstRegistered,
+              gst_number: nextGstNumber,
             }
           : prev
       )
-      setSuccess(true)
-      setTimeout(() => setSuccess(false), 3000)
+      setTaxEditing(false)
+      setTaxSuccess(true)
+      setTimeout(() => setTaxSuccess(false), 3000)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to save')
+      setTaxError(e instanceof Error ? e.message : 'Failed to save')
     } finally {
-      setSaving(false)
+      setTaxSaving(false)
+    }
+  }
+
+  const startDetailsEdit = () => {
+    setDraftFieldOfStudy(fieldOfStudy)
+    setDraftInterests(interests)
+    setDraftAcademicAchievements(academicAchievements)
+    setDraftExtracurricularAchievements(extracurricularAchievements)
+    setDetailsError(null)
+    setDetailsSuccess(false)
+    setDetailsEditing(true)
+  }
+
+  const cancelDetailsEdit = () => {
+    setDetailsEditing(false)
+    setDetailsError(null)
+  }
+
+  const handleSaveDetails = async () => {
+    if (!user) return
+    setDetailsError(null)
+    setDetailsSuccess(false)
+    setDetailsSaving(true)
+    try {
+      const supabase = createClient()
+      const payload = {
+        field_of_study: draftFieldOfStudy.trim() || null,
+        interests: draftInterests.trim() || null,
+        academic_achievements: draftAcademicAchievements.trim() || null,
+        extracurricular_achievements: draftExtracurricularAchievements.trim() || null,
+      }
+      const { error: err } = await supabase.from('profiles').update(payload).eq('id', user.id)
+      if (err) throw err
+      setFieldOfStudy(draftFieldOfStudy)
+      setInterests(draftInterests)
+      setAcademicAchievements(draftAcademicAchievements)
+      setExtracurricularAchievements(draftExtracurricularAchievements)
+      setProfile((prev) => (prev ? { ...prev, ...payload } : prev))
+      setDetailsEditing(false)
+      setDetailsSuccess(true)
+      setTimeout(() => setDetailsSuccess(false), 3000)
+    } catch (e) {
+      setDetailsError(e instanceof Error ? e.message : 'Failed to save')
+    } finally {
+      setDetailsSaving(false)
     }
   }
 
@@ -208,69 +295,89 @@ export default function StudentProfilePage() {
                   <ProfileIdentityNote />
                 </div>
 
-                {/* Editable tax settings */}
-                <form onSubmit={handleSave} className="space-y-4 pt-4 border-t border-ink/10">
-                  <h2 className="text-sm font-semibold text-ink uppercase tracking-wide">Tax settings</h2>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <label htmlFor="gstRegistration" className="block text-sm font-medium text-ink">
-                        GST registration
-                      </label>
-                      <InfoTooltip content="If you're GST-registered, you're responsible for GST on your total taxable activity across all work — not just Swifto." />
-                    </div>
-                    <select
-                      id="gstRegistration"
-                      value={gstRegistered ? 'registered' : 'not_registered'}
-                      onChange={(e) => setGstRegistered(e.target.value === 'registered')}
-                      className="w-full h-11 px-4 rounded-xl border border-ink/20 text-ink focus:outline-none focus:ring-2 focus:ring-primary bg-white"
-                    >
-                      <option value="not_registered">Not GST-registered</option>
-                      <option value="registered">GST-registered</option>
-                    </select>
-                    <p className="text-xs text-ink/60">
-                      GST registration is based on your total self-employed turnover across all work (not just Swifto). If you become GST-registered, update this here.
-                    </p>
-                    {gstRegistered && (
-                      <div className="pt-2">
-                        <label htmlFor="gstNumber" className="block text-sm font-medium text-ink mb-1">
-                          GST number (optional)
-                        </label>
-                        <input
-                          id="gstNumber"
-                          type="text"
+                <ProfileEditableSection
+                  title="Tax settings"
+                  isEditing={taxEditing}
+                  onEdit={startTaxEdit}
+                  onCancel={cancelTaxEdit}
+                  onSave={handleSaveTax}
+                  saving={taxSaving}
+                  error={taxError}
+                  success={taxSuccess}
+                  viewContent={
+                    <div className="space-y-4">
+                      <ProfileReadOnlyField
+                        id="gstRegistrationView"
+                        label="GST registration"
+                        value={gstRegistered ? 'GST-registered' : 'Not GST-registered'}
+                      />
+                      {gstRegistered && (
+                        <ProfileReadOnlyField
+                          id="gstNumberView"
+                          label="GST number"
                           value={gstNumber}
-                          onChange={(e) => setGstNumber(e.target.value)}
-                          className="w-full h-11 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary"
-                          placeholder="e.g. 12-345-678"
                         />
+                      )}
+                      <div className="p-4 bg-canvas/50 rounded-xl border border-ink/15">
+                        <h3 className="text-sm font-semibold text-ink mb-2">Tax reminder</h3>
+                        <p className="text-sm text-ink/80">
+                          Swifto doesn&apos;t file income tax for you. You may need to declare your earnings and keep receipts for expenses.
+                        </p>
                       </div>
-                    )}
-                  </div>
-                  <div className="p-4 bg-canvas/50 rounded-xl border border-ink/15">
-                    <h3 className="text-sm font-semibold text-ink mb-2">Tax reminder</h3>
-                    <p className="text-sm text-ink/80">
-                      Swifto doesn&apos;t file income tax for you. You may need to declare your earnings and keep receipts for expenses.
-                    </p>
-                  </div>
-                  <div className="pt-2">
-                    <Link href="/settings/tax-gst" className="text-sm text-primary hover:text-accent transition-colors">
-                      Tax &amp; GST help →
-                    </Link>
-                  </div>
-                  {error && (
-                    <p className="text-sm text-red-600">{error}</p>
-                  )}
-                  {success && (
-                    <p className="text-sm text-green-600">Profile saved successfully.</p>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="w-full h-11 rounded-xl bg-primary text-white font-semibold hover:bg-secondary transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    {saving ? 'Saving…' : 'Save tax settings'}
-                  </button>
-                </form>
+                      <Link href="/settings/tax-gst" className="text-sm text-primary hover:text-accent transition-colors">
+                        Tax &amp; GST help →
+                      </Link>
+                    </div>
+                  }
+                  editContent={
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <label htmlFor="gstRegistration" className="block text-sm font-medium text-ink">
+                            GST registration
+                          </label>
+                          <InfoTooltip content="If you're GST-registered, you're responsible for GST on your total taxable activity across all work — not just Swifto." />
+                        </div>
+                        <select
+                          id="gstRegistration"
+                          value={draftGstRegistered ? 'registered' : 'not_registered'}
+                          onChange={(e) => setDraftGstRegistered(e.target.value === 'registered')}
+                          className="w-full h-11 px-4 rounded-xl border border-ink/20 text-ink focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+                        >
+                          <option value="not_registered">Not GST-registered</option>
+                          <option value="registered">GST-registered</option>
+                        </select>
+                        <p className="text-xs text-ink/60">
+                          GST registration is based on your total self-employed turnover across all work (not just Swifto). If you become GST-registered, update this here.
+                        </p>
+                        {draftGstRegistered && (
+                          <div className="pt-2">
+                            <label htmlFor="gstNumber" className="block text-sm font-medium text-ink mb-1">
+                              GST number (optional)
+                            </label>
+                            <input
+                              id="gstNumber"
+                              type="text"
+                              value={draftGstNumber}
+                              onChange={(e) => setDraftGstNumber(e.target.value)}
+                              className="w-full h-11 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary"
+                              placeholder="e.g. 12-345-678"
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-4 bg-canvas/50 rounded-xl border border-ink/15">
+                        <h3 className="text-sm font-semibold text-ink mb-2">Tax reminder</h3>
+                        <p className="text-sm text-ink/80">
+                          Swifto doesn&apos;t file income tax for you. You may need to declare your earnings and keep receipts for expenses.
+                        </p>
+                      </div>
+                      <Link href="/settings/tax-gst" className="text-sm text-primary hover:text-accent transition-colors">
+                        Tax &amp; GST help →
+                      </Link>
+                    </div>
+                  }
+                />
 
                 <div className="text-center pt-2">
                   <h1 className="text-2xl font-semibold tracking-tight text-ink">
@@ -278,61 +385,96 @@ export default function StudentProfilePage() {
                   </h1>
                 </div>
 
-                {/* Field of study and below — not yet persisted */}
-                <div className="space-y-2">
-                  <label htmlFor="fieldOfStudy" className="block text-lg font-semibold text-ink">
-                    Field of Study
-                  </label>
-                  <input
-                    type="text"
-                    id="fieldOfStudy"
-                    name="fieldOfStudy"
-                    placeholder="e.g. Computer Science"
-                    className="w-full h-12 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
-                  />
-                </div>
-
-                {/* Interests and Hobbies */}
-                <div className="space-y-2">
-                  <label htmlFor="interests" className="block text-lg font-semibold text-ink">
-                    Interests and Hobbies
-                  </label>
-                  <input
-                    type="text"
-                    id="interests"
-                    name="interests"
-                    placeholder="e.g. Photography, Reading, Hiking"
-                    className="w-full h-12 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
-                  />
-                </div>
-
-                {/* Achievements - Academic */}
-                <div className="space-y-2">
-                  <label htmlFor="academicAchievements" className="block text-lg font-semibold text-ink">
-                    Academic Achievements
-                  </label>
-                  <textarea
-                    id="academicAchievements"
-                    name="academicAchievements"
-                    placeholder="e.g. Dean's List - Fall 2023, Honors Student - 2022-2024"
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors resize-y"
-                  />
-                </div>
-
-                {/* Achievements - Extra-Curricular */}
-                <div className="space-y-2">
-                  <label htmlFor="extracurricularAchievements" className="block text-lg font-semibold text-ink">
-                    Extra-Curricular Achievements
-                  </label>
-                  <textarea
-                    id="extracurricularAchievements"
-                    name="extracurricularAchievements"
-                    placeholder="e.g. President of Student Council - 2023, Volunteer of the Year - 2022"
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors resize-y"
-                  />
-                </div>
+                <ProfileEditableSection
+                  title="Profile details"
+                  isEditing={detailsEditing}
+                  onEdit={startDetailsEdit}
+                  onCancel={cancelDetailsEdit}
+                  onSave={handleSaveDetails}
+                  saving={detailsSaving}
+                  error={detailsError}
+                  success={detailsSuccess}
+                  viewContent={
+                    <div className="space-y-4">
+                      <ProfileReadOnlyField
+                        id="fieldOfStudyView"
+                        label="Field of study"
+                        value={fieldOfStudy}
+                      />
+                      <ProfileReadOnlyField
+                        id="interestsView"
+                        label="Interests and hobbies"
+                        value={interests}
+                      />
+                      <ProfileReadOnlyField
+                        id="academicAchievementsView"
+                        label="Academic achievements"
+                        value={academicAchievements}
+                      />
+                      <ProfileReadOnlyField
+                        id="extracurricularAchievementsView"
+                        label="Extra-curricular achievements"
+                        value={extracurricularAchievements}
+                      />
+                    </div>
+                  }
+                  editContent={
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label htmlFor="fieldOfStudy" className="block text-sm font-medium text-ink">
+                          Field of study
+                        </label>
+                        <input
+                          type="text"
+                          id="fieldOfStudy"
+                          value={draftFieldOfStudy}
+                          onChange={(e) => setDraftFieldOfStudy(e.target.value)}
+                          placeholder="e.g. Computer Science"
+                          className="w-full h-11 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label htmlFor="interests" className="block text-sm font-medium text-ink">
+                          Interests and hobbies
+                        </label>
+                        <input
+                          type="text"
+                          id="interests"
+                          value={draftInterests}
+                          onChange={(e) => setDraftInterests(e.target.value)}
+                          placeholder="e.g. Photography, Reading, Hiking"
+                          className="w-full h-11 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label htmlFor="academicAchievements" className="block text-sm font-medium text-ink">
+                          Academic achievements
+                        </label>
+                        <textarea
+                          id="academicAchievements"
+                          value={draftAcademicAchievements}
+                          onChange={(e) => setDraftAcademicAchievements(e.target.value)}
+                          placeholder="e.g. Dean's List - Fall 2023, Honors Student - 2022-2024"
+                          rows={4}
+                          className="w-full px-4 py-3 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary resize-y"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label htmlFor="extracurricularAchievements" className="block text-sm font-medium text-ink">
+                          Extra-curricular achievements
+                        </label>
+                        <textarea
+                          id="extracurricularAchievements"
+                          value={draftExtracurricularAchievements}
+                          onChange={(e) => setDraftExtracurricularAchievements(e.target.value)}
+                          placeholder="e.g. President of Student Council - 2023, Volunteer of the Year - 2022"
+                          rows={4}
+                          className="w-full px-4 py-3 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary resize-y"
+                        />
+                      </div>
+                    </div>
+                  }
+                />
 
                 {/* Separator Line with Gaps */}
                 <div className="py-6">

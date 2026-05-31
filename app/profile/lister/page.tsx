@@ -7,6 +7,7 @@ import { SiteNav } from '@/components/site-nav'
 import { useAuth } from '@/lib/auth-context'
 import { createClient } from '@/lib/supabase/client'
 import { ProfileIdentityNote, ProfileReadOnlyField } from '@/components/profile-read-only-field'
+import { ProfileEditableSection } from '@/components/profile-editable-section'
 import { StarRatingDisplay } from '@/components/star-rating'
 import { ProfileJobHistoryList } from '@/components/profile-job-history'
 import {
@@ -19,6 +20,10 @@ type Profile = {
   first_name: string
   last_name: string
   role?: 'lister' | 'student'
+  location?: string | null
+  bio?: string | null
+  interests?: string | null
+  preferred_job_categories?: string | null
 }
 
 export default function ListerProfilePage() {
@@ -32,6 +37,18 @@ export default function ListerProfilePage() {
   const [completedJobsCount, setCompletedJobsCount] = useState(0)
   const [completedJobs, setCompletedJobs] = useState<ProfileCompletionJob[]>([])
   const [jobsLoading, setJobsLoading] = useState(true)
+  const [location, setLocation] = useState('')
+  const [bio, setBio] = useState('')
+  const [interests, setInterests] = useState('')
+  const [preferredJobCategories, setPreferredJobCategories] = useState('')
+  const [detailsEditing, setDetailsEditing] = useState(false)
+  const [draftLocation, setDraftLocation] = useState('')
+  const [draftBio, setDraftBio] = useState('')
+  const [draftInterests, setDraftInterests] = useState('')
+  const [draftPreferredJobCategories, setDraftPreferredJobCategories] = useState('')
+  const [detailsSaving, setDetailsSaving] = useState(false)
+  const [detailsError, setDetailsError] = useState<string | null>(null)
+  const [detailsSuccess, setDetailsSuccess] = useState(false)
 
   const displayName = useMemo(() => {
     // 1) Prefer name from user_metadata
@@ -62,7 +79,7 @@ export default function ListerProfilePage() {
       const supabase = createClient()
       const { data } = await supabase
         .from('profiles')
-        .select('first_name, last_name, role')
+        .select('first_name, last_name, role, location, bio, interests, preferred_job_categories')
         .eq('id', user.id)
         .single()
       if (data) {
@@ -71,6 +88,10 @@ export default function ListerProfilePage() {
           return
         }
         setProfile(data as Profile)
+        setLocation(data.location ?? '')
+        setBio(data.bio ?? '')
+        setInterests(data.interests ?? '')
+        setPreferredJobCategories(data.preferred_job_categories ?? '')
 
         const summary = await fetchRatingSummary(supabase, user.id, 'lister')
         setRatingSummary(summary)
@@ -99,6 +120,51 @@ export default function ListerProfilePage() {
     }
     loadCompletions()
   }, [user])
+
+  const startDetailsEdit = () => {
+    setDraftLocation(location)
+    setDraftBio(bio)
+    setDraftInterests(interests)
+    setDraftPreferredJobCategories(preferredJobCategories)
+    setDetailsError(null)
+    setDetailsSuccess(false)
+    setDetailsEditing(true)
+  }
+
+  const cancelDetailsEdit = () => {
+    setDetailsEditing(false)
+    setDetailsError(null)
+  }
+
+  const handleSaveDetails = async () => {
+    if (!user) return
+    setDetailsError(null)
+    setDetailsSuccess(false)
+    setDetailsSaving(true)
+    try {
+      const supabase = createClient()
+      const payload = {
+        location: draftLocation.trim() || null,
+        bio: draftBio.trim() || null,
+        interests: draftInterests.trim() || null,
+        preferred_job_categories: draftPreferredJobCategories.trim() || null,
+      }
+      const { error: err } = await supabase.from('profiles').update(payload).eq('id', user.id)
+      if (err) throw err
+      setLocation(draftLocation)
+      setBio(draftBio)
+      setInterests(draftInterests)
+      setPreferredJobCategories(draftPreferredJobCategories)
+      setProfile((prev) => (prev ? { ...prev, ...payload } : prev))
+      setDetailsEditing(false)
+      setDetailsSuccess(true)
+      setTimeout(() => setDetailsSuccess(false), 3000)
+    } catch (e) {
+      setDetailsError(e instanceof Error ? e.message : 'Failed to save')
+    } finally {
+      setDetailsSaving(false)
+    }
+  }
 
   return (
     <>
@@ -162,61 +228,84 @@ export default function ListerProfilePage() {
                   </h1>
                 </div>
 
-                {/* Location and below — not yet persisted */}
-                <div className="space-y-2">
-                  <label htmlFor="location" className="block text-lg font-semibold text-ink">
-                    Location
-                  </label>
-                  <input
-                    type="text"
-                    id="location"
-                    name="location"
-                    placeholder="e.g. Auckland, New Zealand"
-                    className="w-full h-12 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
-                  />
-                </div>
-
-                {/* Bio */}
-                <div className="space-y-2">
-                  <label htmlFor="bio" className="block text-lg font-semibold text-ink">
-                    Bio
-                  </label>
-                  <textarea
-                    id="bio"
-                    name="bio"
-                    placeholder="Tell us about yourself..."
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors resize-y"
-                  />
-                </div>
-
-                {/* Interests */}
-                <div className="space-y-2">
-                  <label htmlFor="interests" className="block text-lg font-semibold text-ink">
-                    Interests
-                  </label>
-                  <input
-                    type="text"
-                    id="interests"
-                    name="interests"
-                    placeholder="e.g. Photography, Reading, Hiking"
-                    className="w-full h-12 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
-                  />
-                </div>
-
-                {/* Preferred Job Categories */}
-                <div className="space-y-2">
-                  <label htmlFor="jobCategories" className="block text-lg font-semibold text-ink">
-                    Preferred Job Categories
-                  </label>
-                  <input
-                    type="text"
-                    id="jobCategories"
-                    name="jobCategories"
-                    placeholder="e.g. Moving, Cleaning, Pet Care"
-                    className="w-full h-12 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
-                  />
-                </div>
+                <ProfileEditableSection
+                  title="Profile details"
+                  isEditing={detailsEditing}
+                  onEdit={startDetailsEdit}
+                  onCancel={cancelDetailsEdit}
+                  onSave={handleSaveDetails}
+                  saving={detailsSaving}
+                  error={detailsError}
+                  success={detailsSuccess}
+                  viewContent={
+                    <div className="space-y-4">
+                      <ProfileReadOnlyField id="locationView" label="Location" value={location} />
+                      <ProfileReadOnlyField id="bioView" label="Bio" value={bio} />
+                      <ProfileReadOnlyField id="interestsView" label="Interests" value={interests} />
+                      <ProfileReadOnlyField
+                        id="jobCategoriesView"
+                        label="Preferred job categories"
+                        value={preferredJobCategories}
+                      />
+                    </div>
+                  }
+                  editContent={
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label htmlFor="location" className="block text-sm font-medium text-ink">
+                          Location
+                        </label>
+                        <input
+                          type="text"
+                          id="location"
+                          value={draftLocation}
+                          onChange={(e) => setDraftLocation(e.target.value)}
+                          placeholder="e.g. Auckland, New Zealand"
+                          className="w-full h-11 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label htmlFor="bio" className="block text-sm font-medium text-ink">
+                          Bio
+                        </label>
+                        <textarea
+                          id="bio"
+                          value={draftBio}
+                          onChange={(e) => setDraftBio(e.target.value)}
+                          placeholder="Tell us about yourself..."
+                          rows={4}
+                          className="w-full px-4 py-3 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary resize-y"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label htmlFor="interests" className="block text-sm font-medium text-ink">
+                          Interests
+                        </label>
+                        <input
+                          type="text"
+                          id="interests"
+                          value={draftInterests}
+                          onChange={(e) => setDraftInterests(e.target.value)}
+                          placeholder="e.g. Photography, Reading, Hiking"
+                          className="w-full h-11 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label htmlFor="jobCategories" className="block text-sm font-medium text-ink">
+                          Preferred job categories
+                        </label>
+                        <input
+                          type="text"
+                          id="jobCategories"
+                          value={draftPreferredJobCategories}
+                          onChange={(e) => setDraftPreferredJobCategories(e.target.value)}
+                          placeholder="e.g. Moving, Cleaning, Pet Care"
+                          className="w-full h-11 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                    </div>
+                  }
+                />
 
                 {/* Separator Line with Gaps */}
                 <div className="py-6">
