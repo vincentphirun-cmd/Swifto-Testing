@@ -115,6 +115,11 @@ export default function AdminFinancePage() {
           <div className="mx-auto w-full max-w-2xl px-4 md:px-8">
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">Finance Export</h1>
             <p className="text-white/80 mb-8">Download financial ledger data as Excel or CSV.</p>
+            <p className="mb-8">
+              <Link href="/admin/messages" className="text-white/90 hover:text-white underline text-sm">
+                View job message archive →
+              </Link>
+            </p>
 
             <div className="bg-white rounded-2xl border border-ink/15 shadow-lg p-8 space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

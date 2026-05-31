@@ -102,6 +102,17 @@ Example ($25 job, not GST-registered): student receives **$21.71**. GST-register
 
 Run `supabase_financial_ledger_migration.sql` first, then `supabase_financial_ledger_write_migration.sql`, then `supabase_ledger_receipt_migration.sql`. The first creates the `financial_ledger` table. The second updates the job payout trigger and `deduct_listing_fee` to insert ledger rows. The third adds receipt_number/receipt_type for tax receipts. Add `ADMIN_EMAILS` to `.env.local` (comma-separated admin emails) to access `/admin/finance`.
 
+## Job chat (lister ↔ student)
+
+Run `supabase_job_chat_migration.sql` in the SQL Editor **after** payment and cancellation migrations. This adds:
+
+- `job_conversations` and `job_messages` tables
+- Chat opens when a lister **accepts** a student; closes when **payment is released** or the student **cancels**
+- Messages hidden from users after close; retained in DB for **90 days**, then `archived_at` is set (never hard-deleted)
+- Call `SELECT archive_job_conversations_past_retention();` daily (pg_cron or Supabase scheduled job) to archive closed chats after 90 days
+
+Users message at `/messages/[jobId]` (linked from Jobs Listed / Jobs Applied). Admins with `ADMIN_EMAILS` can read all chats at `/admin/messages`.
+
 ## Cancellation & rebooking
 
 Run `supabase_cancellation_rebooking_migration.sql` for student cancellation flow: `start_time`, `urgent_rebook_until` on jobs, `job_cancellations` table, `cancellation_count`/`late_cancel_count`/`total_earnings_cents` on profiles.

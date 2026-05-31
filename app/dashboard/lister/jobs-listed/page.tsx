@@ -10,6 +10,7 @@ import { ErrorAlert } from '@/components/error-alert'
 import { isAbortError } from '@/lib/abort-error'
 import { buildFullyCompletedJobIds, type JobCompletionVerify } from '@/lib/active-jobs'
 import { fetchStudentRatingSummariesBatch } from '@/lib/ratings'
+import { fetchOpenChatJobIds } from '@/lib/job-chat'
 
 type ApplicationStatus = 'pending' | 'accepted' | 'not_selected'
 
@@ -57,6 +58,7 @@ export default function JobsListedPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [updating, setUpdating] = useState(false)
+  const [openChatJobIds, setOpenChatJobIds] = useState<Set<string>>(new Set())
 
   const fetchData = useCallback(async () => {
       setLoading(true)
@@ -141,6 +143,8 @@ export default function JobsListedPage() {
         byJob[row.job_id] = arr
       }
       setApplicationsByJob(byJob)
+      const chatIds = await fetchOpenChatJobIds(user.id)
+      setOpenChatJobIds(chatIds)
     } catch (e) {
       if (!isAbortError(e)) {
         setError(e instanceof Error ? e.message : 'Failed to load jobs')
@@ -204,6 +208,7 @@ export default function JobsListedPage() {
       next[jobId] = arr
       return next
     })
+    setOpenChatJobIds((prev) => new Set(prev).add(jobId))
     setUpdating(false)
   }
 
@@ -515,6 +520,20 @@ export default function JobsListedPage() {
                           <span className="text-xs font-medium text-ink/60">Member since:</span>
                           <span className="text-xs text-ink/60">{formatSince(p?.member_since ?? '')}</span>
                         </div>
+
+                        {activeTab === 'active' && isAccepted && openChatJobIds.has(selectedJobId!) && (
+                          <div className="mt-4 pt-4 border-t border-ink/10">
+                            <Link
+                              href={`/messages/${selectedJobId}`}
+                              className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-primary text-white font-medium hover:bg-secondary transition-colors"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                              </svg>
+                              Message student
+                            </Link>
+                          </div>
+                        )}
 
                         {activeTab === 'active' && !isAccepted && (
                           <div className="flex gap-3 mt-4 pt-4 border-t border-ink/10">

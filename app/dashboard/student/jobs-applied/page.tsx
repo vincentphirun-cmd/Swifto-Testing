@@ -11,6 +11,7 @@ import { FeeBreakdown } from '@/components/fee-breakdown'
 import { CancelJobModal } from '@/components/cancel-job-modal'
 import { buildFullyCompletedJobIds, type JobCompletionVerify } from '@/lib/active-jobs'
 import { fetchStudentGstRegistered } from '@/lib/profile-completions'
+import { fetchOpenChatJobIds } from '@/lib/job-chat'
 
 type ApplicationWithJob = {
   id: string
@@ -41,6 +42,7 @@ export default function JobsAppliedPage() {
   const [awaitingStudentVerify, setAwaitingStudentVerify] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [gstRegistered, setGstRegistered] = useState(false)
+  const [openChatJobIds, setOpenChatJobIds] = useState<Set<string>>(new Set())
   const [error, setError] = useState<string | null>(null)
   const [cancelModalApp, setCancelModalApp] = useState<ApplicationWithJob | null>(null)
 
@@ -55,6 +57,8 @@ export default function JobsAppliedPage() {
       const supabase = createClient()
       const gstReg = await fetchStudentGstRegistered(user.id)
       setGstRegistered(gstReg)
+      const chatIds = await fetchOpenChatJobIds(user.id)
+      setOpenChatJobIds(chatIds)
       const { data: appsData } = await supabase
         .from('job_applications')
         .select('id, job_id, student_id, status, applied_at')
@@ -303,6 +307,14 @@ export default function JobsAppliedPage() {
                                       className="inline-flex px-4 py-2 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors"
                                     >
                                       Verify work complete
+                                    </Link>
+                                  )}
+                                  {app.status === 'accepted' && openChatJobIds.has(app.job_id) && (
+                                    <Link
+                                      href={`/messages/${app.job_id}`}
+                                      className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl font-semibold hover:bg-secondary transition-colors"
+                                    >
+                                      Message lister
                                     </Link>
                                   )}
                                   {app.status === 'accepted' && (
