@@ -273,10 +273,12 @@ export const TOTAL_JOBS_MILESTONES: {
   },
 ]
 
+export type AchievementUnlockTheme = Pick<AchievementTheme, 'unlockedText'>
+
 export function getCountProgress(
   current: number,
   target: number,
-  theme: AchievementTheme
+  theme: AchievementUnlockTheme
 ): AchievementProgress {
   const unlocked = current >= target
   const percent = unlocked ? 100 : Math.min(100, Math.round((current / target) * 100))
@@ -293,7 +295,7 @@ export function getCountProgress(
 export function getEarningsProgress(
   totalEarned: number,
   target: number,
-  theme: AchievementTheme
+  theme: AchievementUnlockTheme
 ): AchievementProgress {
   const unlocked = totalEarned >= target
   const percent = unlocked ? 100 : Math.min(100, Math.round((totalEarned / target) * 100))
