@@ -14,12 +14,12 @@ import {
   fetchListerProfileCompletions,
   type ProfileCompletionJob,
 } from '@/lib/profile-completions'
-import { fetchRatingSummary, type RatingSummary } from '@/lib/ratings'
 
 type Profile = {
   first_name: string
   last_name: string
   role?: 'lister' | 'student'
+  rating?: number
   location?: string | null
   bio?: string | null
   interests?: string | null
@@ -30,10 +30,7 @@ export default function ListerProfilePage() {
   const router = useRouter()
   const { user } = useAuth()
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [ratingSummary, setRatingSummary] = useState<RatingSummary>({
-    averageRating: 0,
-    reviewCount: 0,
-  })
+  const [reviewCount, setReviewCount] = useState(0)
   const [completedJobsCount, setCompletedJobsCount] = useState(0)
   const [completedJobs, setCompletedJobs] = useState<ProfileCompletionJob[]>([])
   const [jobsLoading, setJobsLoading] = useState(true)
@@ -79,7 +76,7 @@ export default function ListerProfilePage() {
       const supabase = createClient()
       const { data } = await supabase
         .from('profiles')
-        .select('first_name, last_name, role, location, bio, interests, preferred_job_categories')
+        .select('first_name, last_name, role, rating, location, bio, interests, preferred_job_categories')
         .eq('id', user.id)
         .single()
       if (data) {
@@ -93,8 +90,12 @@ export default function ListerProfilePage() {
         setInterests(data.interests ?? '')
         setPreferredJobCategories(data.preferred_job_categories ?? '')
 
-        const summary = await fetchRatingSummary(supabase, user.id, 'lister')
-        setRatingSummary(summary)
+        const { count: reviewCountResult } = await supabase
+          .from('job_completions')
+          .select('*', { count: 'exact', head: true })
+          .eq('lister_id', user.id)
+          .not('rating_from_student', 'is', null)
+        setReviewCount(reviewCountResult ?? 0)
       }
     }
     fetchProfile()
@@ -336,8 +337,8 @@ export default function ListerProfilePage() {
                   <div className="text-center space-y-3">
                     <h2 className="text-lg font-semibold text-ink">Rating</h2>
                     <StarRatingDisplay
-                      rating={ratingSummary.averageRating}
-                      reviewCount={ratingSummary.reviewCount}
+                      rating={profile?.rating ?? 0}
+                      reviewCount={reviewCount}
                     />
                   </div>
                   {completedJobsCount > 0 && (
