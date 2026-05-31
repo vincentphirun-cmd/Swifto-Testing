@@ -9,6 +9,12 @@ import { createClient } from '@/lib/supabase/client'
 import { InfoTooltip } from '@/components/info-tooltip'
 import { ProfileIdentityNote, ProfileReadOnlyField } from '@/components/profile-read-only-field'
 import { StarRatingDisplay } from '@/components/star-rating'
+import { ProfileJobHistoryList } from '@/components/profile-job-history'
+import {
+  fetchStudentProfileCompletions,
+  sumStudentPayoutsFromCompletions,
+  type ProfileCompletionJob,
+} from '@/lib/profile-completions'
 
 type Profile = {
   first_name: string
@@ -18,6 +24,7 @@ type Profile = {
   gst_number?: string | null
   rating?: number
   total_jobs?: number
+  total_earnings_cents?: number
 }
 
 export default function StudentProfilePage() {
@@ -25,6 +32,8 @@ export default function StudentProfilePage() {
   const { user } = useAuth()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [reviewCount, setReviewCount] = useState(0)
+  const [completedJobs, setCompletedJobs] = useState<ProfileCompletionJob[]>([])
+  const [jobsLoading, setJobsLoading] = useState(true)
   const [gstRegistered, setGstRegistered] = useState(false)
   const [gstNumber, setGstNumber] = useState('')
   const [saving, setSaving] = useState(false)
@@ -60,7 +69,7 @@ export default function StudentProfilePage() {
       const supabase = createClient()
       const { data } = await supabase
         .from('profiles')
-        .select('first_name, last_name, university, gst_registered, gst_number, role, rating, total_jobs')
+        .select('first_name, last_name, university, gst_registered, gst_number, role, rating, total_jobs, total_earnings_cents')
         .eq('id', user.id)
         .single()
       if (data) {
@@ -82,6 +91,33 @@ export default function StudentProfilePage() {
     }
     fetchProfile()
   }, [user])
+
+  useEffect(() => {
+    async function loadCompletions() {
+      if (!user) {
+        setCompletedJobs([])
+        setJobsLoading(false)
+        return
+      }
+      setJobsLoading(true)
+      try {
+        const jobs = await fetchStudentProfileCompletions(user.id)
+        setCompletedJobs(jobs)
+      } catch {
+        setCompletedJobs([])
+      } finally {
+        setJobsLoading(false)
+      }
+    }
+    loadCompletions()
+  }, [user])
+
+  const totalEarnedDollars = useMemo(() => {
+    if (profile?.total_earnings_cents != null && profile.total_earnings_cents > 0) {
+      return profile.total_earnings_cents / 100
+    }
+    return sumStudentPayoutsFromCompletions(completedJobs)
+  }, [profile?.total_earnings_cents, completedJobs])
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -339,52 +375,26 @@ export default function StudentProfilePage() {
                   )}
                 </div>
 
-                {/* Level Progress Bar */}
-                <div className="space-y-4 pt-4 border-t border-ink/10">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-ink">Level 9</h2>
-                    <span className="text-sm text-ink/70">$455/$500 to Level 10</span>
-                  </div>
-                  <div className="w-full h-4 bg-canvas rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-primary transition-all duration-300"
-                      style={{ width: '91%' }}
-                    ></div>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-primary">Total Earnt: $455</p>
-                  </div>
+                {/* Total earned */}
+                <div className="space-y-2 pt-4 border-t border-ink/10 text-center">
+                  <p className="text-2xl font-bold text-primary">
+                    Total earned: ${totalEarnedDollars.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-ink/60">From completed Swifto jobs</p>
                 </div>
 
                 {/* Past Jobs */}
                 <div className="space-y-4">
                   <h2 className="text-lg font-semibold text-ink">Past Jobs</h2>
-                  <div className="space-y-4">
-                    {[
-                      { title: 'Lawn mowing', date: '2 days ago', payout: '$45', status: 'Completed' },
-                      { title: 'Moving boxes', date: '1 week ago', payout: '$120', status: 'Completed' },
-                      { title: 'Vacuuming', date: '2 weeks ago', payout: '$30', status: 'Completed' },
-                      { title: 'Dog sitting', date: '3 weeks ago', payout: '$80', status: 'Completed' },
-                      { title: 'Car wash', date: '1 month ago', payout: '$25', status: 'Completed' },
-                      { title: 'Furniture assembly', date: '1 month ago', payout: '$95', status: 'Completed' },
-                      { title: 'Garden cleanup', date: '6 weeks ago', payout: '$60', status: 'Completed' },
-                    ].map((job, index) => (
-                      <div key={index} className="p-4 rounded-xl border border-ink/15 bg-canvas/50 space-y-2">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-semibold text-ink">{job.title}</h3>
-                            <p className="text-sm text-ink/70">{job.date}</p>
-                          </div>
-                          <span className="text-base font-semibold text-primary">{job.payout}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
-                            {job.status}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  {jobsLoading ? (
+                    <p className="text-sm text-ink/60">Loading jobs…</p>
+                  ) : (
+                    <ProfileJobHistoryList
+                      jobs={completedJobs}
+                      variant="student"
+                      emptyMessage="No completed jobs yet. Jobs appear here after both you and the lister verify completion."
+                    />
+                  )}
                 </div>
               </div>
             </div>

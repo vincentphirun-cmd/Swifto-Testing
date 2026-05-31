@@ -8,6 +8,11 @@ import { useAuth } from '@/lib/auth-context'
 import { createClient } from '@/lib/supabase/client'
 import { ProfileIdentityNote, ProfileReadOnlyField } from '@/components/profile-read-only-field'
 import { StarRatingDisplay } from '@/components/star-rating'
+import { ProfileJobHistoryList } from '@/components/profile-job-history'
+import {
+  fetchListerProfileCompletions,
+  type ProfileCompletionJob,
+} from '@/lib/profile-completions'
 
 type Profile = {
   first_name: string
@@ -22,6 +27,8 @@ export default function ListerProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [reviewCount, setReviewCount] = useState(0)
   const [completedJobsCount, setCompletedJobsCount] = useState(0)
+  const [completedJobs, setCompletedJobs] = useState<ProfileCompletionJob[]>([])
+  const [jobsLoading, setJobsLoading] = useState(true)
 
   const displayName = useMemo(() => {
     // 1) Prefer name from user_metadata
@@ -68,18 +75,31 @@ export default function ListerProfilePage() {
           .eq('lister_id', user.id)
           .not('rating_from_student', 'is', null)
         setReviewCount(reviewCountResult ?? 0)
-
-        const { count: completedCount } = await supabase
-          .from('job_completions')
-          .select('*', { count: 'exact', head: true })
-          .eq('lister_id', user.id)
-          .not('student_verified_at', 'is', null)
-          .not('lister_verified_at', 'is', null)
-        setCompletedJobsCount(completedCount ?? 0)
       }
     }
     fetchProfile()
   }, [user, router])
+
+  useEffect(() => {
+    async function loadCompletions() {
+      if (!user) {
+        setCompletedJobs([])
+        setJobsLoading(false)
+        return
+      }
+      setJobsLoading(true)
+      try {
+        const jobs = await fetchListerProfileCompletions(user.id)
+        setCompletedJobs(jobs)
+        setCompletedJobsCount(jobs.length)
+      } catch {
+        setCompletedJobs([])
+      } finally {
+        setJobsLoading(false)
+      }
+    }
+    loadCompletions()
+  }, [user])
 
   return (
     <>
@@ -241,35 +261,18 @@ export default function ListerProfilePage() {
                   )}
                 </div>
 
-                {/* Posted Jobs */}
+                {/* Completed Jobs */}
                 <div className="space-y-4">
-                  <h2 className="text-lg font-semibold text-ink">Posted Jobs</h2>
-                  <div className="space-y-4">
-                    {[
-                      { title: 'Lawn mowing', date: '3 days ago', budget: '$45', status: 'Completed' },
-                      { title: 'Moving boxes', date: '1 week ago', budget: '$120', status: 'Completed' },
-                      { title: 'House cleaning', date: '2 weeks ago', budget: '$85', status: 'Completed' },
-                      { title: 'Dog walking', date: '3 weeks ago', budget: '$50', status: 'Completed' },
-                      { title: 'Garden maintenance', date: '1 month ago', budget: '$95', status: 'Completed' },
-                      { title: 'Furniture assembly', date: '1 month ago', budget: '$75', status: 'Completed' },
-                      { title: 'Window cleaning', date: '6 weeks ago', budget: '$60', status: 'Completed' },
-                    ].map((job, index) => (
-                      <div key={index} className="p-4 rounded-xl border border-ink/15 bg-canvas/50 space-y-2">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-semibold text-ink">{job.title}</h3>
-                            <p className="text-sm text-ink/70">{job.date}</p>
-                          </div>
-                          <span className="text-base font-semibold text-primary">{job.budget}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
-                            {job.status}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <h2 className="text-lg font-semibold text-ink">Completed Jobs</h2>
+                  {jobsLoading ? (
+                    <p className="text-sm text-ink/60">Loading jobs…</p>
+                  ) : (
+                    <ProfileJobHistoryList
+                      jobs={completedJobs}
+                      variant="lister"
+                      emptyMessage="No completed jobs yet. Jobs appear here after both you and the student verify completion."
+                    />
+                  )}
                 </div>
               </div>
             </div>
