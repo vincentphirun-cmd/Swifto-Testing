@@ -13,19 +13,22 @@ import {
   fetchListerProfileCompletions,
   type ProfileCompletionJob,
 } from '@/lib/profile-completions'
+import { fetchRatingSummary, type RatingSummary } from '@/lib/ratings'
 
 type Profile = {
   first_name: string
   last_name: string
   role?: 'lister' | 'student'
-  rating?: number
 }
 
 export default function ListerProfilePage() {
   const router = useRouter()
   const { user } = useAuth()
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [reviewCount, setReviewCount] = useState(0)
+  const [ratingSummary, setRatingSummary] = useState<RatingSummary>({
+    averageRating: 0,
+    reviewCount: 0,
+  })
   const [completedJobsCount, setCompletedJobsCount] = useState(0)
   const [completedJobs, setCompletedJobs] = useState<ProfileCompletionJob[]>([])
   const [jobsLoading, setJobsLoading] = useState(true)
@@ -59,7 +62,7 @@ export default function ListerProfilePage() {
       const supabase = createClient()
       const { data } = await supabase
         .from('profiles')
-        .select('first_name, last_name, role, rating')
+        .select('first_name, last_name, role')
         .eq('id', user.id)
         .single()
       if (data) {
@@ -69,12 +72,8 @@ export default function ListerProfilePage() {
         }
         setProfile(data as Profile)
 
-        const { count: reviewCountResult } = await supabase
-          .from('job_completions')
-          .select('*', { count: 'exact', head: true })
-          .eq('lister_id', user.id)
-          .not('rating_from_student', 'is', null)
-        setReviewCount(reviewCountResult ?? 0)
+        const summary = await fetchRatingSummary(supabase, user.id, 'lister')
+        setRatingSummary(summary)
       }
     }
     fetchProfile()
@@ -248,8 +247,8 @@ export default function ListerProfilePage() {
                   <div className="text-center space-y-3">
                     <h2 className="text-lg font-semibold text-ink">Rating</h2>
                     <StarRatingDisplay
-                      rating={profile?.rating ?? 0}
-                      reviewCount={reviewCount}
+                      rating={ratingSummary.averageRating}
+                      reviewCount={ratingSummary.reviewCount}
                     />
                   </div>
                   {completedJobsCount > 0 && (

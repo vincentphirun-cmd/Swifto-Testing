@@ -15,6 +15,7 @@ import {
   sumStudentPayoutsFromCompletions,
   type ProfileCompletionJob,
 } from '@/lib/profile-completions'
+import { fetchRatingSummary, type RatingSummary } from '@/lib/ratings'
 
 type Profile = {
   first_name: string
@@ -22,7 +23,6 @@ type Profile = {
   university: string | null
   gst_registered?: boolean
   gst_number?: string | null
-  rating?: number
   total_jobs?: number
   total_earnings_cents?: number
 }
@@ -31,7 +31,10 @@ export default function StudentProfilePage() {
   const router = useRouter()
   const { user } = useAuth()
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [reviewCount, setReviewCount] = useState(0)
+  const [ratingSummary, setRatingSummary] = useState<RatingSummary>({
+    averageRating: 0,
+    reviewCount: 0,
+  })
   const [completedJobs, setCompletedJobs] = useState<ProfileCompletionJob[]>([])
   const [jobsLoading, setJobsLoading] = useState(true)
   const [gstRegistered, setGstRegistered] = useState(false)
@@ -69,7 +72,7 @@ export default function StudentProfilePage() {
       const supabase = createClient()
       const { data } = await supabase
         .from('profiles')
-        .select('first_name, last_name, university, gst_registered, gst_number, role, rating, total_jobs, total_earnings_cents')
+        .select('first_name, last_name, university, gst_registered, gst_number, role, total_jobs, total_earnings_cents')
         .eq('id', user.id)
         .single()
       if (data) {
@@ -81,12 +84,8 @@ export default function StudentProfilePage() {
         setGstRegistered(data.gst_registered ?? false)
         setGstNumber(data.gst_number ?? '')
 
-        const { count } = await supabase
-          .from('job_completions')
-          .select('*', { count: 'exact', head: true })
-          .eq('student_id', user.id)
-          .not('rating_from_lister', 'is', null)
-        setReviewCount(count ?? 0)
+        const summary = await fetchRatingSummary(supabase, user.id, 'student')
+        setRatingSummary(summary)
       }
     }
     fetchProfile()
@@ -364,8 +363,8 @@ export default function StudentProfilePage() {
                   <div className="text-center space-y-3">
                     <h2 className="text-lg font-semibold text-ink">Rating</h2>
                     <StarRatingDisplay
-                      rating={profile?.rating ?? 0}
-                      reviewCount={reviewCount}
+                      rating={ratingSummary.averageRating}
+                      reviewCount={ratingSummary.reviewCount}
                     />
                   </div>
                   {(profile?.total_jobs ?? 0) > 0 && (
