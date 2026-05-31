@@ -9,6 +9,7 @@ export type ProfileCompletionJob = {
   rating_from_student: number | null
   job_name: string
   price: number
+  category: string | null
   counterpartyName: string | null
 }
 
@@ -39,13 +40,13 @@ async function loadJobsAndNames(
   const counterpartyIds = Array.from(new Set(completions.map((c) => c[counterpartyKey])))
 
   const [{ data: jobsData }, { data: profData }] = await Promise.all([
-    supabase.from('jobs').select('id, job_name, price').in('id', jobIds),
+    supabase.from('jobs').select('id, job_name, price, category').in('id', jobIds),
     supabase.from('profiles').select('id, first_name, last_name').in('id', counterpartyIds),
   ])
 
-  const jobsMap: Record<string, { job_name: string; price: number }> = {}
+  const jobsMap: Record<string, { job_name: string; price: number; category: string | null }> = {}
   for (const j of jobsData ?? []) {
-    jobsMap[j.id] = { job_name: j.job_name, price: j.price }
+    jobsMap[j.id] = { job_name: j.job_name, price: j.price, category: j.category ?? null }
   }
 
   const profMap: Record<string, string> = {}
@@ -63,6 +64,7 @@ async function loadJobsAndNames(
       rating_from_student: c.rating_from_student,
       job_name: job?.job_name ?? 'Unknown job',
       price: Number(job?.price ?? 0),
+      category: job?.category ?? null,
       counterpartyName: profMap[c[counterpartyKey]] ?? null,
     }
   })
