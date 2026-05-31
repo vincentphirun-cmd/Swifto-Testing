@@ -14,12 +14,13 @@ import {
   fetchListerProfileCompletions,
   type ProfileCompletionJob,
 } from '@/lib/profile-completions'
+import { getAccountIdentity } from '@/lib/profile-account-identity'
+import { fetchRatingSummary, type RatingSummary } from '@/lib/ratings'
 
 type Profile = {
   first_name: string
   last_name: string
   role?: 'lister' | 'student'
-  rating?: number
   location?: string | null
   bio?: string | null
   interests?: string | null
@@ -30,7 +31,10 @@ export default function ListerProfilePage() {
   const router = useRouter()
   const { user } = useAuth()
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [reviewCount, setReviewCount] = useState(0)
+  const [ratingSummary, setRatingSummary] = useState<RatingSummary>({
+    averageRating: 0,
+    reviewCount: 0,
+  })
   const [completedJobsCount, setCompletedJobsCount] = useState(0)
   const [completedJobs, setCompletedJobs] = useState<ProfileCompletionJob[]>([])
   const [jobsLoading, setJobsLoading] = useState(true)
@@ -47,25 +51,24 @@ export default function ListerProfilePage() {
   const [detailsError, setDetailsError] = useState<string | null>(null)
   const [detailsSuccess, setDetailsSuccess] = useState(false)
 
+  const accountIdentity = useMemo(
+    () => getAccountIdentity(user, profile),
+    [user, profile]
+  )
+
   const displayName = useMemo(() => {
-    // 1) Prefer name from user_metadata
-    const meta = (user as any)?.user_metadata
-    const metaName = [meta?.first_name, meta?.last_name].filter(Boolean).join(' ').trim()
-    if (metaName) return metaName
+    const n = [accountIdentity.firstName, accountIdentity.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim()
+    if (n) return n
 
-    // 2) Fallback to profile record
-    if (profile) {
-      const n = [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim()
-      if (n) return n
-    }
-
-    // 3) Fallback to email prefix
     if (user?.email) {
       const prefix = user.email.split('@')[0]
       if (prefix) return prefix
     }
     return 'User'
-  }, [user, profile])
+  }, [accountIdentity, user])
 
   useEffect(() => {
     async function fetchProfile() {
@@ -76,7 +79,7 @@ export default function ListerProfilePage() {
       const supabase = createClient()
       const { data } = await supabase
         .from('profiles')
-        .select('first_name, last_name, role, rating, location, bio, interests, preferred_job_categories')
+        .select('first_name, last_name, role, location, bio, interests, preferred_job_categories')
         .eq('id', user.id)
         .single()
       if (data) {
@@ -90,12 +93,8 @@ export default function ListerProfilePage() {
         setInterests(data.interests ?? '')
         setPreferredJobCategories(data.preferred_job_categories ?? '')
 
-        const { count: reviewCountResult } = await supabase
-          .from('job_completions')
-          .select('*', { count: 'exact', head: true })
-          .eq('lister_id', user.id)
-          .not('rating_from_student', 'is', null)
-        setReviewCount(reviewCountResult ?? 0)
+        const summary = await fetchRatingSummary(supabase, user.id, 'lister')
+        setRatingSummary(summary)
       }
     }
     fetchProfile()
@@ -203,17 +202,17 @@ export default function ListerProfilePage() {
                   <ProfileReadOnlyField
                     id="firstName"
                     label="First name"
-                    value={profile?.first_name ?? ''}
+                    value={accountIdentity.firstName}
                   />
                   <ProfileReadOnlyField
                     id="lastName"
                     label="Last name"
-                    value={profile?.last_name ?? ''}
+                    value={accountIdentity.lastName}
                   />
                   <ProfileReadOnlyField
                     id="email"
                     label="Email"
-                    value={user?.email ?? ''}
+                    value={accountIdentity.email}
                   />
                   <ProfileIdentityNote />
                   <div className="pt-2">
@@ -337,8 +336,8 @@ export default function ListerProfilePage() {
                   <div className="text-center space-y-3">
                     <h2 className="text-lg font-semibold text-ink">Rating</h2>
                     <StarRatingDisplay
-                      rating={profile?.rating ?? 0}
-                      reviewCount={reviewCount}
+                      rating={ratingSummary.averageRating}
+                      reviewCount={ratingSummary.reviewCount}
                     />
                   </div>
                   {completedJobsCount > 0 && (
