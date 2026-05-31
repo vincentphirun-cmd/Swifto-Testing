@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Job not found or not yours' }, { status: 404 })
     }
 
-    const amountNzd = `$${FEE_CONFIG.LISTING_FEE.toFixed(2)}`
+    const amountNzd = `$${FEE_CONFIG.LISTING_FEE_TOTAL.toFixed(2)} ($${FEE_CONFIG.LISTING_FEE_EX_GST.toFixed(2)} + GST)`
     if (user.email) {
       await sendListingFeeCharged(user.email, String(jobName), amountNzd)
     }

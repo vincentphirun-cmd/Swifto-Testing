@@ -126,8 +126,10 @@ export async function GET(req: NextRequest) {
     ws2.getRow(1).font = { bold: true }
     for (const r of ledger) {
       const isListingFee = r.notes === 'Listing fee'
-      const amountPaid = isListingFee ? Number(r.platform_fee ?? 0.99) : Number(r.job_price_gross ?? 0)
-      const swiftoFee = isListingFee ? Number(r.platform_fee ?? 0.99) : 0
+      const amountPaid = isListingFee
+        ? Number(r.platform_fee ?? 0.99) + Number(r.gst_on_platform_fee ?? 0.15)
+        : Number(r.job_price_gross ?? 0)
+      const swiftoFee = isListingFee ? Number(r.platform_fee ?? 0.99) : Number(r.platform_fee ?? 0)
       ws2.addRow({
         receipt_id: r.id,
         date: (r.created_at || '').toString().slice(0, 10),

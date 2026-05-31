@@ -7,6 +7,7 @@ import {
 type Props = {
   jobs: ProfileCompletionJob[]
   variant: 'student' | 'lister'
+  gstRegistered?: boolean
   emptyMessage?: string
 }
 
@@ -25,6 +26,7 @@ function RatingBadge({ rating }: { rating: number | null }) {
 export function ProfileJobHistoryList({
   jobs,
   variant,
+  gstRegistered = false,
   emptyMessage = 'No completed jobs yet.',
 }: Props) {
   if (jobs.length === 0) {
@@ -47,7 +49,7 @@ export function ProfileJobHistoryList({
               {variant === 'student' ? (
                 <>
                   <span className="text-base font-semibold text-primary">
-                    ${getStudentPayoutEstimate(job.price).toFixed(2)}
+                    ${getStudentPayoutEstimate(job.price, { gstRegistered }).toFixed(2)}
                   </span>
                   <p className="text-xs text-ink/60">Earned</p>
                 </>

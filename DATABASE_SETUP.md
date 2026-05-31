@@ -77,13 +77,26 @@ Run `supabase_job_payment_trigger.sql` in the SQL Editor. This releases payment 
 
 Run `supabase_platform_fee_migration.sql` in the SQL Editor. This updates the job payment trigger to withhold the Swifto platform fee from the student payout (student receives job price minus fee).
 
+**Superseded by** `supabase_gst_fee_model_migration.sql` — run that instead if setting up a fresh environment or upgrading to the GST-aware model.
+
 ## GST fields (student profiles)
 
 Run `supabase_gst_migration.sql` in the SQL Editor. This adds `gst_registered` (boolean) and `gst_number` (text) to profiles for student tax settings.
 
-## Listing fee ($0.99 per job)
+## Listing fee ($0.99 + GST per job)
 
 Run `supabase_listing_fee_migration.sql` in the SQL Editor. This adds the `listing_fee` transaction type and the `deduct_listing_fee` function used when listers post a job.
+
+## GST-aware fee model (7.5% Swifto fee + flat-rate credit)
+
+Run `supabase_gst_fee_model_migration.sql` in the SQL Editor **after** listing fee, platform fee, and financial ledger migrations. This updates:
+
+- Listing fee to **$1.14** ($0.99 ex GST + $0.15 GST) at post
+- Job payout: GST split from job price, **7.5% Swifto fee** on gross, **8.5% flat-rate credit** for non–GST-registered students
+- `release_job_payment_on_both_verified` reads `profiles.gst_registered` for payout calculation
+- Ledger rows populate `gst_on_job` and `gst_on_platform_fee`
+
+Example ($25 job, not GST-registered): student receives **$21.71**. GST-registered: **$19.86**.
 
 ## Financial ledger (accounting export)
 

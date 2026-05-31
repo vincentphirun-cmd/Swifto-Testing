@@ -2,22 +2,20 @@
 
 import { useState } from 'react'
 import {
-  getProcessingFeeAllocation,
-  getSwiftoServiceFee,
-  getStudentPayoutEstimate,
+  getJobPayoutBreakdown,
   getStripeFeeEstimate,
   FEE_CONFIG,
 } from '@/lib/fees'
 
 interface FeeBreakdownProps {
-  /** Job price in NZD */
+  /** Job price in NZD (GST-inclusive) */
   price: number
+  /** Student GST registration status (affects flat-rate credit) */
+  gstRegistered?: boolean
   /** Show Stripe estimate in breakdown */
   showStripeEstimate?: boolean
   /** Show payout release note (for student views) */
   showPayoutNote?: boolean
-  /** Show note that processing fee is paid by lister at post */
-  showProcessingNote?: boolean
   /** Compact mode for cards (single line + expand) vs full for modal */
   variant?: 'compact' | 'full'
   className?: string
@@ -25,23 +23,28 @@ interface FeeBreakdownProps {
 
 export function FeeBreakdown({
   price,
+  gstRegistered = false,
   showStripeEstimate = false,
   showPayoutNote = false,
-  showProcessingNote = false,
   variant = 'compact',
   className = '',
 }: FeeBreakdownProps) {
   const [expanded, setExpanded] = useState(variant === 'full')
-  const processingFee = getProcessingFeeAllocation(price)
-  const swiftoFee = getSwiftoServiceFee(price)
-  const payout = getStudentPayoutEstimate(price)
+  const {
+    gstInJob,
+    serviceExGst,
+    flatRateCredit,
+    swiftoFee,
+    studentPayout,
+  } = getJobPayoutBreakdown(price, { gstRegistered })
   const stripeEst = showStripeEstimate ? getStripeFeeEstimate(price) : 0
+  const swiftoPct = (FEE_CONFIG.SWIFTO_FEE_RATE * 100).toFixed(1)
 
   return (
     <div className={className}>
       <p className="text-sm font-medium text-ink">You&apos;ll earn</p>
       <p className="text-sm text-ink/80">
-        <span className="font-semibold text-primary">${payout.toFixed(2)}</span> after fees
+        <span className="font-semibold text-primary">${studentPayout.toFixed(2)}</span> after fees
       </p>
       {showPayoutNote && (
         <p className="text-xs text-ink/60 mt-1">Payouts are released after both parties verify completion.</p>
@@ -58,25 +61,30 @@ export function FeeBreakdown({
       {expanded && (
         <div className="mt-2 p-3 bg-canvas/50 rounded-lg border border-ink/10 text-xs space-y-1.5">
           <div className="flex justify-between">
-            <span className="text-ink/70">Job price</span>
+            <span className="text-ink/70">Job price (incl. GST)</span>
             <span className="font-medium text-ink">${price.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-ink/70">Processing fee</span>
-            <span className="font-medium text-ink">−${processingFee.toFixed(2)}</span>
+            <span className="text-ink/70">GST in job price</span>
+            <span className="font-medium text-ink">${gstInJob.toFixed(2)}</span>
           </div>
-          {showProcessingNote && (
-            <p className="text-[10px] text-ink/50 italic">
-              Processing fee is charged to the lister when the job is posted.
-            </p>
+          <div className="flex justify-between">
+            <span className="text-ink/70">Service value (ex GST)</span>
+            <span className="font-medium text-ink">${serviceExGst.toFixed(2)}</span>
+          </div>
+          {flatRateCredit > 0 && (
+            <div className="flex justify-between">
+              <span className="text-ink/70">Flat-rate credit</span>
+              <span className="font-medium text-green-700">+${flatRateCredit.toFixed(2)}</span>
+            </div>
           )}
           <div className="flex justify-between">
-            <span className="text-ink/70">Swifto fee ({(FEE_CONFIG.SWIFTO_FEE_RATE * 100).toFixed(0)}%)</span>
+            <span className="text-ink/70">Swifto fee ({swiftoPct}%)</span>
             <span className="font-medium text-ink">−${swiftoFee.toFixed(2)}</span>
           </div>
           <div className="flex justify-between pt-1 border-t border-ink/10">
             <span className="text-ink/70">Your earnings</span>
-            <span className="font-semibold text-primary">${payout.toFixed(2)}</span>
+            <span className="font-semibold text-primary">${studentPayout.toFixed(2)}</span>
           </div>
           {showStripeEstimate && stripeEst > 0 && (
             <>

@@ -1,5 +1,6 @@
 import {
   fetchStudentProfileCompletions,
+  fetchStudentGstRegistered,
   sumStudentPayoutsFromCompletions,
 } from '@/lib/profile-completions'
 
@@ -313,13 +314,14 @@ export async function fetchStudentAchievementStats(
   userId: string
 ): Promise<StudentAchievementStats> {
   const jobs = await fetchStudentProfileCompletions(userId)
+  const gstRegistered = await fetchStudentGstRegistered(userId)
   const byCategory: Record<string, number> = {}
   for (const job of jobs) {
     if (!job.category) continue
     byCategory[job.category] = (byCategory[job.category] ?? 0) + 1
   }
   return {
-    totalEarned: sumStudentPayoutsFromCompletions(jobs),
+    totalEarned: sumStudentPayoutsFromCompletions(jobs, gstRegistered),
     completedJobCount: jobs.length,
     byCategory,
   }

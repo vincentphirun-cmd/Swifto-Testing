@@ -6,10 +6,10 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth-context'
 import { SiteNav } from '@/components/site-nav'
 import { captureEvent } from '@/lib/posthog'
-import { validateMinJobPrice, FEE_CONFIG } from '@/lib/fees'
+import { validateMinJobPrice, FEE_CONFIG, getListingFeeTotalCents } from '@/lib/fees'
 import { isAbortError } from '@/lib/abort-error'
 
-const LISTING_FEE_CENTS = 99
+const LISTING_FEE_CENTS = getListingFeeTotalCents()
 
 export default function PostJobPage() {
   const router = useRouter()
@@ -82,7 +82,7 @@ export default function PostJobPage() {
 
       if (balance < LISTING_FEE_CENTS) {
         setError(
-          `You need at least $${FEE_CONFIG.LISTING_FEE.toFixed(2)} in your balance to list a job. Add funds from your dashboard.`
+          `You need at least $${FEE_CONFIG.LISTING_FEE_TOTAL.toFixed(2)} ($${FEE_CONFIG.LISTING_FEE_EX_GST.toFixed(2)} + GST) in your balance to list a job. Add funds from your dashboard.`
         )
         setSubmitting(false)
         return
@@ -124,7 +124,7 @@ export default function PostJobPage() {
 
       if (feeErr) {
         await supabase.from('jobs').delete().eq('id', newJob.id)
-        setError(feeErr.message.includes('Insufficient') ? 'Insufficient balance. Add at least $0.99 to your balance to list a job.' : feeErr.message)
+        setError(feeErr.message.includes('Insufficient') ? 'Insufficient balance. Add at least $1.14 ($0.99 + GST) to your balance to list a job.' : feeErr.message)
         setSubmitting(false)
         return
       }
@@ -197,7 +197,7 @@ export default function PostJobPage() {
             {/* Form Card */}
             <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-ink/15 shadow-lg p-8 md:p-10 space-y-6">
               <div className="p-4 bg-canvas/50 rounded-xl border border-ink/10 text-sm text-ink/80">
-                A ${FEE_CONFIG.LISTING_FEE.toFixed(2)} listing fee will be charged when you post this job.
+                A ${FEE_CONFIG.LISTING_FEE_TOTAL.toFixed(2)} listing fee ($${FEE_CONFIG.LISTING_FEE_EX_GST.toFixed(2)} + GST) will be charged when you post this job.
               </div>
               {error ? (
                 <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800 text-sm" role="alert">

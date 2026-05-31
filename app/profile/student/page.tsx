@@ -139,8 +139,8 @@ export default function StudentProfilePage() {
     if (profile?.total_earnings_cents != null && profile.total_earnings_cents > 0) {
       return profile.total_earnings_cents / 100
     }
-    return sumStudentPayoutsFromCompletions(completedJobs)
-  }, [profile?.total_earnings_cents, completedJobs])
+    return sumStudentPayoutsFromCompletions(completedJobs, gstRegistered)
+  }, [profile?.total_earnings_cents, completedJobs, gstRegistered])
 
   const startTaxEdit = () => {
     setDraftGstRegistered(gstRegistered)
@@ -531,6 +531,7 @@ export default function StudentProfilePage() {
                     <ProfileJobHistoryList
                       jobs={completedJobs}
                       variant="student"
+                      gstRegistered={gstRegistered}
                       emptyMessage="No completed jobs yet. Jobs appear here after both you and the lister verify completion."
                     />
                   )}

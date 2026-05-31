@@ -9,6 +9,7 @@ import { LoadingSpinner } from '@/components/loading-spinner'
 import { ErrorAlert } from '@/components/error-alert'
 import { FeeBreakdown } from '@/components/fee-breakdown'
 import { getStudentPayoutEstimate } from '@/lib/fees'
+import { fetchStudentGstRegistered } from '@/lib/profile-completions'
 
 type CompletionRow = {
   id: string
@@ -30,6 +31,7 @@ type CompletionRow = {
 export default function StudentJobsCompletedPage() {
   const { user } = useAuth()
   const [completions, setCompletions] = useState<CompletionRow[]>([])
+  const [gstRegistered, setGstRegistered] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -42,6 +44,8 @@ export default function StudentJobsCompletedPage() {
         return
       }
       const supabase = createClient()
+      const gstReg = await fetchStudentGstRegistered(user.id)
+      setGstRegistered(gstReg)
       const { data: compData } = await supabase
         .from('job_completions')
         .select('id, job_id, student_id, lister_id, completed_at, rating_from_lister')
@@ -156,7 +160,7 @@ export default function StudentJobsCompletedPage() {
                               </span>
                             </div>
                             <p className="text-2xl font-bold text-primary mb-1">
-                              ${getStudentPayoutEstimate(Number(c.job.price)).toFixed(2)}
+                              ${getStudentPayoutEstimate(Number(c.job.price), { gstRegistered }).toFixed(2)}
                             </p>
                             <p className="text-xs text-ink/60">Your earnings</p>
                           </div>
@@ -164,8 +168,8 @@ export default function StudentJobsCompletedPage() {
                         <div className="border-t border-ink/10 pt-4 space-y-3">
                           <FeeBreakdown
                             price={c.job.price}
+                            gstRegistered={gstRegistered}
                             variant="full"
-                            showProcessingNote
                             className="mb-4"
                           />
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

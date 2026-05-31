@@ -1,22 +1,25 @@
 /**
- * Swifto fee model (NZD)
+ * Swifto fee model (NZD) — GST-aware two-transaction structure
  *
- * Listing/processing fee ($0.99) is charged to the lister when posting a job.
- * Student payout on completion:
- *   remainder = job price − $0.99
- *   Swifto service fee = 5% of remainder
- *   student payout = job price − $0.99 − Swifto service fee
+ * Transaction 1 (listing): $0.99 ex GST + 15% GST → lister pays $1.14 at post.
+ * Transaction 2 (job payout): job price is GST-inclusive; student payout depends on gst_registered.
  *
- * Example: $30 job → $27.56 student payout
+ * $25 example (not GST-registered): service $21.74, GST $3.26, credit +$1.85, Swifto −$1.88 → $21.71
+ * $25 example (GST-registered): service $21.74, GST $3.26, credit $0, Swifto −$1.88 → $19.86
  */
 
 export const FEE_CONFIG = {
-  /** Flat fee charged to lister when posting a job (NZD) */
-  LISTING_FEE: 0.99,
-  /** Same amount allocated from job price when calculating student payout */
-  PROCESSING_FEE: 0.99,
-  /** Swifto service fee rate on amount after processing allocation */
-  SWIFTO_FEE_RATE: 0.05,
+  GST_RATE: 0.15,
+  /** Listing fee ex GST (Transaction 1) */
+  LISTING_FEE_EX_GST: 0.99,
+  /** GST on listing fee */
+  LISTING_FEE_GST: 0.15,
+  /** Total listing fee charged to lister (ex GST + GST) */
+  LISTING_FEE_TOTAL: 1.14,
+  /** Swifto service fee: 7.5% of gross job price */
+  SWIFTO_FEE_RATE: 0.075,
+  /** Flat-rate credit: 8.5% of service ex GST, non–GST-registered students only */
+  FLAT_RATE_CREDIT_RATE: 0.085,
   MIN_JOB_PRICE: 10,
   STRIPE_RATE: 0.0265,
   STRIPE_FIXED: 0.3,
@@ -26,27 +29,79 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100
 }
 
-/** Processing fee allocation from job price (lister pays this at post). */
-export function getProcessingFeeAllocation(price: number): number {
-  if (price <= 0) return 0
-  return FEE_CONFIG.PROCESSING_FEE
+export interface StudentPayoutOptions {
+  gstRegistered?: boolean
 }
 
-/** Swifto 5% service fee on (job price − processing fee). */
+export interface JobPayoutBreakdown {
+  jobPrice: number
+  gstInJob: number
+  serviceExGst: number
+  flatRateCredit: number
+  swiftoFee: number
+  studentPayout: number
+}
+
+/** Service value excluding GST from a GST-inclusive job price. */
+export function getServiceExGst(price: number): number {
+  if (price <= 0) return 0
+  return round2(price / (1 + FEE_CONFIG.GST_RATE))
+}
+
+/** GST component inside a GST-inclusive job price. */
+export function getGstInJob(price: number): number {
+  if (price <= 0) return 0
+  return round2(price - getServiceExGst(price))
+}
+
+/** Swifto service fee: 7.5% of gross job price. */
 export function getSwiftoServiceFee(price: number): number {
   if (price <= 0) return 0
-  const remainder = round2(price - FEE_CONFIG.PROCESSING_FEE)
-  if (remainder <= 0) return 0
-  return round2(remainder * FEE_CONFIG.SWIFTO_FEE_RATE)
+  return round2(price * FEE_CONFIG.SWIFTO_FEE_RATE)
 }
 
-/**
- * Total withheld from job price before student payout.
- * = processing allocation + Swifto service fee
- */
-export function getPlatformFee(price: number): number {
+/** Flat-rate credit for non–GST-registered students. */
+export function getFlatRateCredit(price: number): number {
   if (price <= 0) return 0
-  return round2(getProcessingFeeAllocation(price) + getSwiftoServiceFee(price))
+  return round2(getServiceExGst(price) * FEE_CONFIG.FLAT_RATE_CREDIT_RATE)
+}
+
+/** Swifto fee withheld from job (alias for ledger / exports). */
+export function getPlatformFee(price: number): number {
+  return getSwiftoServiceFee(price)
+}
+
+/** GST on listing fee (Transaction 1). */
+export function getListingFeeGst(): number {
+  return FEE_CONFIG.LISTING_FEE_GST
+}
+
+/** Total listing fee incl. GST charged at post. */
+export function getListingFeeTotal(): number {
+  return FEE_CONFIG.LISTING_FEE_TOTAL
+}
+
+export function getJobPayoutBreakdown(
+  price: number,
+  options?: StudentPayoutOptions
+): JobPayoutBreakdown {
+  const gstRegistered = options?.gstRegistered ?? false
+  if (price <= 0) {
+    return {
+      jobPrice: 0,
+      gstInJob: 0,
+      serviceExGst: 0,
+      flatRateCredit: 0,
+      swiftoFee: 0,
+      studentPayout: 0,
+    }
+  }
+  const serviceExGst = getServiceExGst(price)
+  const gstInJob = getGstInJob(price)
+  const swiftoFee = getSwiftoServiceFee(price)
+  const flatRateCredit = gstRegistered ? 0 : getFlatRateCredit(price)
+  const studentPayout = round2(serviceExGst + flatRateCredit - swiftoFee)
+  return { jobPrice: price, gstInJob, serviceExGst, flatRateCredit, swiftoFee, studentPayout }
 }
 
 /** Stripe fee estimate for NZ domestic online card (display only). */
@@ -56,18 +111,12 @@ export function getStripeFeeEstimate(price: number): number {
   return round2(price * STRIPE_RATE + STRIPE_FIXED)
 }
 
-export interface StudentPayoutOptions {
-  /** Include Stripe fee in breakdown (for display). Default false. */
-  includeStripeEstimate?: boolean
-}
-
-/** Student payout after processing allocation and Swifto service fee. */
+/** Student payout after GST split, flat-rate credit, and Swifto fee. */
 export function getStudentPayoutEstimate(
   price: number,
-  _options?: StudentPayoutOptions
+  options?: StudentPayoutOptions
 ): number {
-  if (price <= 0) return 0
-  return round2(price - getPlatformFee(price))
+  return getJobPayoutBreakdown(price, options).studentPayout
 }
 
 /** Validate minimum job price. Returns { ok: true } or { ok: false, message }. */
@@ -88,11 +137,17 @@ export function validateMinJobPrice(price: number): {
   return { ok: true }
 }
 
-/** Total platform withhold in cents for database/trigger use. */
 export function getPlatformFeeCents(priceNzd: number): number {
   return Math.round(getPlatformFee(priceNzd) * 100)
 }
 
-export function getStudentPayoutCents(priceNzd: number): number {
-  return Math.round(getStudentPayoutEstimate(priceNzd) * 100)
+export function getStudentPayoutCents(
+  priceNzd: number,
+  gstRegistered = false
+): number {
+  return Math.round(getStudentPayoutEstimate(priceNzd, { gstRegistered }) * 100)
+}
+
+export function getListingFeeTotalCents(): number {
+  return Math.round(FEE_CONFIG.LISTING_FEE_TOTAL * 100)
 }

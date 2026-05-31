@@ -10,6 +10,7 @@ import { ErrorAlert } from '@/components/error-alert'
 import { FeeBreakdown } from '@/components/fee-breakdown'
 import { CancelJobModal } from '@/components/cancel-job-modal'
 import { buildFullyCompletedJobIds, type JobCompletionVerify } from '@/lib/active-jobs'
+import { fetchStudentGstRegistered } from '@/lib/profile-completions'
 
 type ApplicationWithJob = {
   id: string
@@ -39,6 +40,7 @@ export default function JobsAppliedPage() {
   const [fullyCompletedJobIds, setFullyCompletedJobIds] = useState<Set<string>>(new Set())
   const [awaitingStudentVerify, setAwaitingStudentVerify] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
+  const [gstRegistered, setGstRegistered] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [cancelModalApp, setCancelModalApp] = useState<ApplicationWithJob | null>(null)
 
@@ -51,6 +53,8 @@ export default function JobsAppliedPage() {
       setError(null)
       try {
       const supabase = createClient()
+      const gstReg = await fetchStudentGstRegistered(user.id)
+      setGstRegistered(gstReg)
       const { data: appsData } = await supabase
         .from('job_applications')
         .select('id, job_id, student_id, status, applied_at')
@@ -273,7 +277,7 @@ export default function JobsAppliedPage() {
                                 </div>
                               </div>
                               <div className="border-t border-ink/10 pt-4 space-y-3">
-                                <FeeBreakdown price={app.jobs.price} showPayoutNote className="mb-4" />
+                                <FeeBreakdown price={app.jobs.price} gstRegistered={gstRegistered} showPayoutNote className="mb-4" />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   <div>
                                     <p className="text-xs font-semibold text-ink/60 uppercase tracking-wide mb-1">Size/Time</p>
@@ -369,7 +373,7 @@ export default function JobsAppliedPage() {
                                 </div>
                               </div>
                               <div className="border-t border-ink/10 pt-4 space-y-3">
-                                <FeeBreakdown price={app.jobs.price} showPayoutNote className="mb-4" />
+                                <FeeBreakdown price={app.jobs.price} gstRegistered={gstRegistered} showPayoutNote className="mb-4" />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   <div>
                                     <p className="text-xs font-semibold text-ink/60 uppercase tracking-wide mb-1">Size/Time</p>

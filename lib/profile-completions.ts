@@ -106,8 +106,24 @@ export async function fetchListerProfileCompletions(
   return loadJobsAndNames((data ?? []) as CompletionRow[], 'student_id')
 }
 
-export function sumStudentPayoutsFromCompletions(jobs: ProfileCompletionJob[]): number {
-  return jobs.reduce((sum, j) => sum + getStudentPayoutEstimate(j.price), 0)
+export async function fetchStudentGstRegistered(userId: string): Promise<boolean> {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from('profiles')
+    .select('gst_registered')
+    .eq('id', userId)
+    .maybeSingle()
+  return data?.gst_registered ?? false
+}
+
+export function sumStudentPayoutsFromCompletions(
+  jobs: ProfileCompletionJob[],
+  gstRegistered = false
+): number {
+  return jobs.reduce(
+    (sum, j) => sum + getStudentPayoutEstimate(j.price, { gstRegistered }),
+    0
+  )
 }
 
 export function formatCompletionDate(iso: string): string {

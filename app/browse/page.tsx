@@ -11,10 +11,12 @@ import { captureEvent } from '@/lib/posthog'
 import { LoadingSpinner } from '@/components/loading-spinner'
 import { ErrorAlert } from '@/components/error-alert'
 import { FeeBreakdown } from '@/components/fee-breakdown'
+import { fetchStudentGstRegistered } from '@/lib/profile-completions'
 
 export default function BrowseJobsPage() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
+  const [gstRegistered, setGstRegistered] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [appliedJobs, setAppliedJobs] = useState<Set<string>>(new Set())
   const [selectedJob, setSelectedJob] = useState<string | null>(null)
@@ -121,19 +123,21 @@ export default function BrowseJobsPage() {
     fetchJobs()
   }, [fetchJobs])
 
-  // Fetch student's applications when logged in
+  // Fetch student's applications and GST status when logged in
   useEffect(() => {
     async function fetchApplications() {
       if (!user) {
         setAppliedJobs(new Set())
+        setGstRegistered(false)
         return
       }
       const supabase = createClient()
-      const { data } = await supabase
-        .from('job_applications')
-        .select('job_id')
-        .eq('student_id', user.id)
-      const ids = new Set((data ?? []).map((r: { job_id: string }) => r.job_id))
+      const [appsResult, gstReg] = await Promise.all([
+        supabase.from('job_applications').select('job_id').eq('student_id', user.id),
+        fetchStudentGstRegistered(user.id),
+      ])
+      setGstRegistered(gstReg)
+      const ids = new Set((appsResult.data ?? []).map((r: { job_id: string }) => r.job_id))
       setAppliedJobs(ids)
     }
     fetchApplications()
@@ -458,7 +462,7 @@ export default function BrowseJobsPage() {
                         </div>
                       </div>
                     </div>
-                    <FeeBreakdown price={job.priceAmount} showStripeEstimate={false} showPayoutNote className="mt-2" />
+                    <FeeBreakdown price={job.priceAmount} gstRegistered={gstRegistered} showStripeEstimate={false} showPayoutNote className="mt-2" />
                     {/* Action buttons */}
                     <div className="flex flex-wrap gap-3 pt-2 border-t border-ink/10 justify-end">
                       {appliedJobs.has(job.id) ? (
@@ -579,7 +583,7 @@ export default function BrowseJobsPage() {
                   </div>
                 </div>
                 <div className="mt-4 pt-4 border-t border-ink/10">
-                  <FeeBreakdown price={selectedJobData.priceAmount} showStripeEstimate showPayoutNote variant="full" />
+                  <FeeBreakdown price={selectedJobData.priceAmount} gstRegistered={gstRegistered} showStripeEstimate showPayoutNote variant="full" />
                 </div>
               </div>
 

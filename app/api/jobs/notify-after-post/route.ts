@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     await Promise.all([
       sendNewJobToStudents(emails, name, category, area, price),
       user.email
-        ? sendListingFeeCharged(user.email, String(jobName), `$${FEE_CONFIG.LISTING_FEE.toFixed(2)}`)
+        ? sendListingFeeCharged(user.email, String(jobName), `$${FEE_CONFIG.LISTING_FEE_TOTAL.toFixed(2)} ($${FEE_CONFIG.LISTING_FEE_EX_GST.toFixed(2)} + GST)`)
         : Promise.resolve(),
     ])
 
