@@ -1,0 +1,69 @@
+/* ---------------------------------------------------------------------------
+   Swifto — Color tokens
+   A calm, trustworthy blue system. One brand hue (primary) carried through
+   hovers (secondary), links (accent), with a near-navy ink for text and a
+   pale blue canvas for page backgrounds. Source: tailwind.config.js
+--------------------------------------------------------------------------- */
+:root {
+  /* --- Base palette (the five brand colors) --- */
+  --swifto-ink: #13293D;       /* near-navy — primary text, wordmark */
+  --swifto-primary: #006494;   /* deep teal-blue — buttons, hero, brand fills */
+  --swifto-secondary: #247BA0; /* mid blue — primary hover / pressed */
+  --swifto-accent: #1B98E0;    /* bright sky blue — link hover, highlights */
+  --swifto-canvas: #E8F1F2;    /* pale blue-grey — page background, soft fills */
+  --swifto-white: #FFFFFF;     /* card and surface white */
+
+  /* --- Ink opacity ladder (text + hairlines on light surfaces) --- */
+  --ink-80: rgba(19, 41, 61, 0.80); /* body copy */
+  --ink-70: rgba(19, 41, 61, 0.70); /* secondary copy */
+  --ink-60: rgba(19, 41, 61, 0.60); /* muted copy, meta */
+  --ink-50: rgba(19, 41, 61, 0.50); /* placeholder text */
+  --ink-20: rgba(19, 41, 61, 0.20); /* input borders, empty stars */
+  --ink-15: rgba(19, 41, 61, 0.15); /* card borders */
+  --ink-10: rgba(19, 41, 61, 0.10); /* dividers, subtle borders */
+  --ink-5:  rgba(19, 41, 61, 0.05); /* ghost-button hover fill */
+
+  /* --- Primary tints --- */
+  --primary-50: rgba(0, 100, 148, 0.50); /* card border on hover */
+  --primary-30: rgba(0, 100, 148, 0.30); /* job-card border on hover */
+  --primary-10: rgba(0, 100, 148, 0.10); /* icon-circle backgrounds */
+
+  /* --- On-primary (text/borders over the brand blue) --- */
+  --on-primary: #FFFFFF;
+  --on-primary-90: rgba(255, 255, 255, 0.90);
+  --on-primary-20: rgba(255, 255, 255, 0.20);
+
+  /* --- Semantic status colors (Tailwind palette, as used in product) --- */
+  --success-bg: #DCFCE7;     /* green-100 */
+  --success-fg: #15803D;     /* green-700 */
+  --success-border: #86EFAC; /* green-300 */
+  --warning-bg: #FEF3C7;     /* amber-100 — "Urgent rebook" badge */
+  --warning-fg: #92400E;     /* amber-800 */
+  --danger-bg: #FEF2F2;      /* red-50 — error alerts */
+  --danger-fg: #991B1B;      /* red-800 */
+  --danger-border: #FECACA;  /* red-200 */
+
+  /* --- Semantic aliases (prefer these in product code) --- */
+  --text-strong: var(--swifto-ink);
+  --text-body: var(--ink-80);
+  --text-muted: var(--ink-60);
+  --text-placeholder: var(--ink-50);
+  --text-on-brand: var(--on-primary);
+  --link: var(--swifto-primary);
+  --link-hover: var(--swifto-accent);
+
+  --surface-page: var(--swifto-canvas);
+  --surface-card: var(--swifto-white);
+  --surface-brand: var(--swifto-primary);
+  --surface-ink: var(--swifto-ink);       /* dark footer / CTA band */
+  --surface-soft: var(--swifto-canvas);   /* inset panels (canvas/50 in product) */
+
+  --border-card: var(--ink-15);
+  --border-divider: var(--ink-10);
+  --border-input: var(--ink-20);
+  --border-focus: var(--swifto-primary);
+
+  --btn-primary-bg: var(--swifto-primary);
+  --btn-primary-bg-hover: var(--swifto-secondary);
+  --focus-ring: var(--swifto-primary);
+}

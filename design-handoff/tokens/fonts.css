@@ -1,0 +1,6 @@
+/* ---------------------------------------------------------------------------
+   Swifto — Webfont
+   Inter is the sole Swifto typeface (loaded 400/500/600/700 in the product via
+   next/font). Consumers pick it up from Google Fonts here.
+--------------------------------------------------------------------------- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
