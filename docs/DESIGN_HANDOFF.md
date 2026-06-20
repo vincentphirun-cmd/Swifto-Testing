@@ -25,7 +25,7 @@ Test the **warm redesign** and POC design system **without** changing production
 | # | Decision |
 |---|----------|
 | **O1** | Keep redesign as exploration only, or migrate into the real Next.js app? |
-| **O2** | Palette: Coral / Blue / Green |
+| **O2** | Palette: Coral / Blue / Green | **Coral applied** in `tailwind.config.js` on this branch |
 | **O3** | Headline font: Bricolage / Inter / Space Grotesk |
 | **O4** | Corners: Soft / Pill / Sharp |
 | **O5** | Allow gradients + photography (redesign) vs flat colour only (POC)? |

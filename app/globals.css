@@ -5,13 +5,22 @@
 @layer base {
   :root {
     --font-inter: 'Inter', system-ui, -apple-system, sans-serif;
-  }
-  
-  body {
-    @apply bg-canvas text-ink antialiased;
+    --font-display: 'Bricolage Grotesque', var(--font-inter), sans-serif;
+    --photo-tint: rgba(10, 46, 77, 0.34);
   }
 
-  /* Prevent iOS zoom on input focus - 16px minimum prevents auto-zoom */
+  body {
+    @apply bg-canvas text-ink antialiased font-sans;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-display font-bold tracking-tight text-ink leading-tight;
+  }
+
+  ::selection {
+    @apply bg-primary-soft text-ink;
+  }
+
   @media (max-width: 639px) {
     input, select, textarea {
       font-size: 16px;
@@ -19,3 +28,76 @@
   }
 }
 
+@layer components {
+  .swifto-nav {
+    @apply sticky top-0 z-50 border-b border-line;
+    background: color-mix(in srgb, #F1F6F8 82%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .swifto-card {
+    @apply bg-white rounded-3xl border border-line-card shadow-card;
+  }
+
+  .swifto-card-hover {
+    @apply transition-all duration-300 ease-swifto hover:-translate-y-1 hover:shadow-lift;
+  }
+
+  .swifto-btn {
+    @apply inline-flex items-center justify-center gap-2 font-semibold rounded-btn transition-all duration-200 ease-swifto;
+  }
+
+  .swifto-btn-primary {
+    @apply swifto-btn bg-primary text-white hover:bg-secondary shadow-[0_8px_20px_-8px_#1B98E0] hover:-translate-y-px;
+  }
+
+  .swifto-btn-outline-brand {
+    @apply swifto-btn border-[1.5px] border-brand/35 text-brand bg-transparent hover:bg-brand-soft;
+  }
+
+  .swifto-btn-outline-white {
+    @apply swifto-btn border-[1.5px] border-white/60 text-white bg-transparent hover:bg-white/10;
+  }
+
+  .swifto-btn-white {
+    @apply swifto-btn bg-white text-brand-deep hover:bg-canvas shadow-[0_8px_22px_-10px_rgba(0,0,0,0.4)];
+  }
+
+  .swifto-btn-ghost {
+    @apply swifto-btn text-brand bg-transparent hover:bg-brand-soft;
+  }
+
+  .swifto-badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap;
+  }
+
+  .swifto-badge-coral {
+    @apply swifto-badge bg-primary-soft text-accent-deep;
+  }
+
+  .swifto-badge-brand {
+    @apply swifto-badge bg-brand-soft text-brand-deep;
+  }
+
+  .swifto-badge-white {
+    @apply swifto-badge bg-white/15 text-white;
+  }
+
+  .swifto-nav-link {
+    @apply relative text-[15px] font-medium text-ink-2 hover:text-ink transition-colors py-1.5;
+  }
+
+  .swifto-nav-link-active {
+    @apply text-ink font-bold;
+  }
+
+  .swifto-nav-link-active::after {
+    content: '';
+    @apply absolute left-0 right-0 -bottom-0.5 h-0.5 rounded-sm bg-primary;
+  }
+
+  .swifto-content {
+    @apply mx-auto w-full max-w-content px-6;
+  }
+}

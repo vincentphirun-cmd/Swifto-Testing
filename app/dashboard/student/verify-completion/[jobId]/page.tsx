@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth-context'
 import { SiteNav } from '@/components/site-nav'
+import { PageHero } from '@/components/page-hero'
 import { LoadingSpinner } from '@/components/loading-spinner'
 import { StarRatingInput } from '@/components/star-rating'
 import { captureEvent } from '@/lib/posthog'
@@ -117,8 +118,8 @@ export default function StudentVerifyCompletionPage() {
     return (
       <>
         <SiteNav />
-        <main className="min-h-screen bg-primary flex items-center justify-center">
-          <p className="text-white">Please log in.</p>
+        <main className="min-h-screen bg-canvas flex items-center justify-center">
+          <p className="text-ink-muted">Please log in.</p>
         </main>
       </>
     )
@@ -128,9 +129,9 @@ export default function StudentVerifyCompletionPage() {
     return (
       <>
         <SiteNav />
-        <main className="min-h-screen bg-primary flex flex-col items-center justify-center gap-4">
-          <LoadingSpinner size="lg" variant="light" />
-          <p className="text-white/80">Loading…</p>
+        <main className="min-h-screen bg-canvas flex flex-col items-center justify-center gap-4">
+          <LoadingSpinner size="lg" variant="default" />
+          <p className="text-ink-muted">Loading…</p>
         </main>
       </>
     )
@@ -140,10 +141,10 @@ export default function StudentVerifyCompletionPage() {
     return (
       <>
         <SiteNav />
-        <main className="min-h-screen bg-primary">
+        <main className="min-h-screen bg-canvas">
           <section className="py-16 md:py-24">
             <div className="mx-auto w-full max-w-6xl px-4 md:px-8">
-              <p className="text-white mb-4">{error}</p>
+              <p className="text-ink mb-4">{error}</p>
               <Link href="/dashboard/student/jobs-applied" className="text-primary hover:underline">
                 Back to Active Jobs
               </Link>
@@ -157,25 +158,16 @@ export default function StudentVerifyCompletionPage() {
   return (
     <>
       <SiteNav />
-      <main className="min-h-screen bg-primary">
-        <section className="py-16 md:py-24">
+      <main className="min-h-screen bg-canvas">
+        <PageHero
+          backHref="/dashboard/student/jobs-applied"
+          backLabel="Back to Active Jobs"
+          title="Verify work complete"
+          subtitle="Confirm that you have completed this job as agreed with the lister."
+        />
+        <section className="py-8 md:py-12">
           <div className="mx-auto w-full max-w-2xl px-4 md:px-8">
-            <Link
-              href="/dashboard/student/jobs-applied"
-              className="inline-flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-6"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Back to Active Jobs
-            </Link>
-
-            <div className="bg-white rounded-2xl border border-ink/15 shadow-sm p-8">
-              <h1 className="text-2xl font-bold text-ink mb-2">Verify work complete</h1>
-              <p className="text-ink/70 mb-6">
-                Confirm that you have completed this job as agreed with the lister.
-              </p>
-
+            <div className="swifto-card p-8">
               {job && (
                 <div className="space-y-4 mb-8">
                   <div>

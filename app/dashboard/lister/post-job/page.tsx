@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth-context'
 import { SiteNav } from '@/components/site-nav'
+import { PageHero } from '@/components/page-hero'
 import { captureEvent } from '@/lib/posthog'
 import { validateMinJobPrice, FEE_CONFIG, getListingFeeTotalCents } from '@/lib/fees'
 import { isAbortError } from '@/lib/abort-error'
@@ -160,8 +161,8 @@ export default function PostJobPage() {
     return (
       <>
         <SiteNav />
-        <main className="min-h-screen bg-primary flex items-center justify-center">
-          <p className="text-white text-lg">Job posted! Opening your listings…</p>
+        <main className="min-h-screen bg-canvas flex items-center justify-center">
+          <p className="text-ink-muted text-lg">Job posted! Opening your listings…</p>
         </main>
       </>
     )
@@ -171,8 +172,8 @@ export default function PostJobPage() {
     return (
       <>
         <SiteNav />
-        <main className="min-h-screen bg-primary flex items-center justify-center">
-          <p className="text-white text-lg">Loading…</p>
+        <main className="min-h-screen bg-canvas flex items-center justify-center">
+          <p className="text-ink-muted text-lg">Loading…</p>
         </main>
       </>
     )
@@ -181,21 +182,16 @@ export default function PostJobPage() {
   return (
     <>
       <SiteNav />
-      <main className="min-h-screen bg-primary">
-        <section className="py-16 md:py-24">
+      <main className="min-h-screen bg-canvas">
+        <PageHero
+          backHref="/dashboard/lister"
+          backLabel="Back to Dashboard"
+          title="Post a job"
+          subtitle="Fill in the details below to create a new job listing"
+        />
+        <section className="py-8 md:py-12">
           <div className="mx-auto w-full max-w-3xl px-4 md:px-8">
-            {/* Page Header */}
-            <div className="mb-8">
-              <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
-                Post a Job
-              </h1>
-              <p className="text-white/80 text-lg">
-                Fill in the details below to create a new job listing
-              </p>
-            </div>
-
-            {/* Form Card */}
-            <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-ink/15 shadow-lg p-8 md:p-10 space-y-6">
+            <form onSubmit={handleSubmit} className="swifto-card p-8 md:p-10 space-y-6">
               <div className="p-4 bg-canvas/50 rounded-xl border border-ink/10 text-sm text-ink/80">
                 A ${FEE_CONFIG.LISTING_FEE_TOTAL.toFixed(2)} listing fee ($${FEE_CONFIG.LISTING_FEE_EX_GST.toFixed(2)} + GST) will be charged when you post this job.
               </div>

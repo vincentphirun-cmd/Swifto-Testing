@@ -17,8 +17,8 @@ export function DashboardRoleGuard({ role, pauseGuard, children }: Props) {
     return (
       <>
         <SiteNav />
-        <main className="min-h-screen bg-primary flex items-center justify-center">
-          <p className="text-white text-lg">Loading…</p>
+        <main className="min-h-screen bg-canvas flex items-center justify-center">
+          <p className="text-ink-muted text-lg">Loading…</p>
         </main>
       </>
     )

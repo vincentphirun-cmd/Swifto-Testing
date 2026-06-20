@@ -1,6 +1,6 @@
 /* Swifto redesign — app shell, router + Tweaks (window.App) */
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-  "theme": "coral",
+  "theme": "blue",
   "font": "bricolage",
   "radius": "soft",
   "imagery": true

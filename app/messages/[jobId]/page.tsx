@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { SiteNav } from '@/components/site-nav'
+import { HeroBand } from '@/components/hero-band'
+import { PageHero } from '@/components/page-hero'
 import { LoadingSpinner } from '@/components/loading-spinner'
 import { useAuth } from '@/lib/auth-context'
 import { createClient } from '@/lib/supabase/client'
@@ -136,9 +138,9 @@ export default function JobChatPage() {
     return (
       <>
         <SiteNav />
-        <main className="min-h-screen bg-primary flex flex-col items-center justify-center gap-4">
-          <LoadingSpinner size="lg" variant="light" />
-          <p className="text-white/80">Loading chat…</p>
+        <main className="min-h-screen bg-canvas flex flex-col items-center justify-center gap-4">
+          <LoadingSpinner size="lg" variant="default" />
+          <p className="text-ink-muted">Loading chat…</p>
         </main>
       </>
     )
@@ -148,21 +150,13 @@ export default function JobChatPage() {
     return (
       <>
         <SiteNav />
-        <main className="min-h-screen bg-primary">
-          <section className="py-16 md:py-24">
-            <div className="mx-auto w-full max-w-2xl px-4 md:px-8 text-center">
-              <h1 className="text-3xl font-bold text-white mb-4">Chat unavailable</h1>
-              <p className="text-white/80 mb-8">
-                This chat is closed. Messaging is only available while a job is in progress, before payment is released.
-              </p>
-              <Link
-                href="/dashboard/student"
-                className="inline-flex h-12 px-6 rounded-xl bg-white text-primary font-medium hover:bg-canvas transition-colors items-center"
-              >
-                Back to dashboard
-              </Link>
-            </div>
-          </section>
+        <main className="min-h-screen bg-canvas">
+          <PageHero title="Chat unavailable" subtitle="Messaging is only available while a job is in progress, before payment is released." centered />
+          <div className="py-10 text-center">
+            <Link href="/dashboard/student" className="swifto-btn-primary h-12 px-6">
+              Back to dashboard
+            </Link>
+          </div>
         </main>
       </>
     )
@@ -171,22 +165,22 @@ export default function JobChatPage() {
   return (
     <>
       <SiteNav />
-      <main className="min-h-screen bg-primary flex flex-col">
-        <section className="py-6 md:py-8 border-b border-white/10">
+      <main className="min-h-screen bg-canvas flex flex-col">
+        <HeroBand compact>
           <div className="mx-auto w-full max-w-3xl px-4 md:px-8">
             <Link
               href={conversation.lister_id === user?.id ? '/dashboard/lister/jobs-listed' : '/dashboard/student/jobs-applied'}
-              className="inline-flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-4 text-sm"
+              className="inline-flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-3 text-sm"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               Back
             </Link>
-            <h1 className="text-2xl md:text-3xl font-bold text-white">{jobTitle}</h1>
-            <p className="text-white/80 mt-1">Chat with {counterpartyName}</p>
+            <h1 className="text-2xl md:text-3xl font-bold">{jobTitle}</h1>
+            <p className="text-white/85 mt-1">Chat with {counterpartyName}</p>
           </div>
-        </section>
+        </HeroBand>
 
         <div className="flex-1 mx-auto w-full max-w-3xl px-4 md:px-8 py-6 flex flex-col min-h-0">
           <div className="flex-1 bg-white rounded-2xl border border-ink/15 shadow-lg flex flex-col min-h-[420px] max-h-[calc(100vh-280px)]">
@@ -238,7 +232,7 @@ export default function JobChatPage() {
             </form>
             {error ? <p className="px-4 pb-3 text-sm text-red-600">{error}</p> : null}
           </div>
-          <p className="text-xs text-white/60 mt-3 text-center">
+          <p className="text-xs text-ink-muted mt-3 text-center">
             Messages are saved while the job is active. Chat closes when payment is released.
           </p>
         </div>

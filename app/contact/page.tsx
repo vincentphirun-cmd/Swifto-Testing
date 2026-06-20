@@ -2,25 +2,16 @@
 
 import Link from 'next/link'
 import { SiteNav } from '@/components/site-nav'
+import { PageHero } from '@/components/page-hero'
 
 export default function ContactPage() {
   return (
     <>
       <SiteNav />
-      <main>
-        {/* Hero Section */}
-        <section className="py-16 md:py-24 bg-primary">
-          <div className="mx-auto w-full max-w-6xl px-4 md:px-8">
-            <div className="text-center">
-              <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white">
-                Contact Us
-              </h1>
-            </div>
-          </div>
-        </section>
+      <main className="bg-canvas">
+        <PageHero title="Contact us" centered />
 
-        {/* Content Section */}
-        <section className="py-16 md:py-24 bg-white">
+        <section className="py-16 md:py-24">
           <div className="mx-auto w-full max-w-4xl px-4 md:px-8">
             {/* Intro */}
             <div className="mb-12">

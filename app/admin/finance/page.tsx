@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { SiteNav } from '@/components/site-nav'
+import { PageHero } from '@/components/page-hero'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth-context'
 
@@ -88,8 +89,8 @@ export default function AdminFinancePage() {
     return (
       <>
         <SiteNav />
-        <main className="min-h-screen bg-primary flex items-center justify-center">
-          <p className="text-white">Loading…</p>
+        <main className="min-h-screen bg-canvas flex items-center justify-center">
+          <p className="text-ink-muted">Loading…</p>
         </main>
       </>
     )
@@ -99,9 +100,9 @@ export default function AdminFinancePage() {
     return (
       <>
         <SiteNav />
-        <main className="min-h-screen bg-primary flex flex-col items-center justify-center px-4">
-          <p className="text-white text-lg mb-4">Access denied. Admin only.</p>
-          <Link href="/" className="text-white/80 hover:text-white underline">Back to home</Link>
+        <main className="min-h-screen bg-canvas flex flex-col items-center justify-center px-4">
+          <p className="text-ink text-lg mb-4">Access denied. Admin only.</p>
+          <Link href="/" className="text-brand hover:text-primary underline">Back to home</Link>
         </main>
       </>
     )
@@ -110,18 +111,17 @@ export default function AdminFinancePage() {
   return (
     <>
       <SiteNav />
-      <main className="min-h-screen bg-primary">
-        <section className="py-16 md:py-24">
+      <main className="min-h-screen bg-canvas">
+        <PageHero title="Finance export" subtitle="Download financial ledger data as Excel or CSV." />
+        <section className="py-8 md:py-12">
           <div className="mx-auto w-full max-w-2xl px-4 md:px-8">
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">Finance Export</h1>
-            <p className="text-white/80 mb-8">Download financial ledger data as Excel or CSV.</p>
             <p className="mb-8">
-              <Link href="/admin/messages" className="text-white/90 hover:text-white underline text-sm">
+              <Link href="/admin/messages" className="text-brand hover:text-primary font-medium text-sm">
                 View job message archive →
               </Link>
             </p>
 
-            <div className="bg-white rounded-2xl border border-ink/15 shadow-lg p-8 space-y-6">
+            <div className="swifto-card p-8 space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="startDate" className="block text-sm font-medium text-ink mb-2">Start date</label>
@@ -175,7 +175,7 @@ export default function AdminFinancePage() {
 
             <Link
               href="/"
-              className="inline-flex items-center gap-2 text-white/80 hover:text-white mt-6 transition-colors"
+              className="inline-flex items-center gap-2 text-brand hover:text-primary mt-6 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
