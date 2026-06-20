@@ -1,0 +1,27 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Ink opacity ladder" subtitle="Text & hairlines layered on light surfaces" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface-card); }
+  .row { display: flex; gap: 10px; }
+  .col { flex: 1; text-align: center; }
+  .chip { height: 56px; border-radius: var(--radius-lg); border: 1px solid var(--border-divider); }
+  .lab { margin-top: 8px; font-size: 12px; font-weight: 600; color: var(--text-strong); }
+  .use { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="col"><div class="chip" style="background:var(--swifto-ink)"></div><div class="lab">ink</div><div class="use">wordmark</div></div>
+    <div class="col"><div class="chip" style="background:var(--ink-80)"></div><div class="lab">ink/80</div><div class="use">body</div></div>
+    <div class="col"><div class="chip" style="background:var(--ink-70)"></div><div class="lab">ink/70</div><div class="use">secondary</div></div>
+    <div class="col"><div class="chip" style="background:var(--ink-60)"></div><div class="lab">ink/60</div><div class="use">muted</div></div>
+    <div class="col"><div class="chip" style="background:var(--ink-20)"></div><div class="lab">ink/20</div><div class="use">input border</div></div>
+    <div class="col"><div class="chip" style="background:var(--ink-15)"></div><div class="lab">ink/15</div><div class="use">card border</div></div>
+    <div class="col"><div class="chip" style="background:var(--ink-10)"></div><div class="lab">ink/10</div><div class="use">divider</div></div>
+  </div>
+</body>
+</html>

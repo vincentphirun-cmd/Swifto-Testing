@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { SiteNav } from '@/components/site-nav'
+import { PageHero } from '@/components/page-hero'
 import { useAuth } from '@/lib/auth-context'
 import { createClient } from '@/lib/supabase/client'
 import { ProfileIdentityNote, ProfileReadOnlyField } from '@/components/profile-read-only-field'
@@ -167,20 +168,10 @@ export default function ListerProfilePage() {
   return (
     <>
       <SiteNav />
-      <main className="min-h-screen bg-primary">
-        <section className="py-16 md:py-24">
+      <main className="min-h-screen bg-canvas">
+        <PageHero backHref="/dashboard/lister" backLabel="Back to Dashboard" title="Your profile" />
+        <section className="py-8 md:py-12">
           <div className="mx-auto w-full max-w-6xl px-4 md:px-8">
-            <div className="mb-6">
-              <Link 
-                href="/dashboard/lister"
-                className="inline-flex items-center gap-2 text-white/80 hover:text-white transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Back to Dashboard
-              </Link>
-            </div>
             <div className="grid md:grid-cols-2 gap-8">
               {/* Main Profile Box */}
               <div className="bg-white rounded-2xl border border-ink/15 shadow-sm p-8 md:p-10 space-y-8">

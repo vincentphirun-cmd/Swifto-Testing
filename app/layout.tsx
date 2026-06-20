@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Bricolage_Grotesque, Inter } from 'next/font/google'
 import './globals.css'
 import { AuthProviderWrapper } from '@/components/auth-provider-wrapper'
 
@@ -11,8 +11,15 @@ export const viewport: Viewport = {
 
 const inter = Inter({
   subsets: ['latin'],
-  weight: ['400', '500', '600'],
+  weight: ['400', '500', '600', '700'],
   variable: '--font-inter',
+  display: 'swap',
+})
+
+const bricolage = Bricolage_Grotesque({
+  subsets: ['latin'],
+  weight: ['600', '700', '800'],
+  variable: '--font-display',
   display: 'swap',
 })
 
@@ -52,7 +59,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.variable}>
+      <body className={`${inter.variable} ${bricolage.variable}`}>
         <script dangerouslySetInnerHTML={{ __html: abortErrorScript }} />
         <AuthProviderWrapper>{children}</AuthProviderWrapper>
       </body>

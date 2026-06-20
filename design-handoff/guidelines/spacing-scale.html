@@ -1,0 +1,23 @@
+<!-- @dsCard group="Spacing" viewport="700x150" name="Spacing scale" subtitle="4px base — card padding 24, section 64/96" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 24px; background: var(--surface-card); }
+  .row { display: flex; align-items: center; gap: 12px; margin-bottom: 9px; }
+  .bar { height: 16px; background: var(--swifto-accent); border-radius: 3px; }
+  .name { width: 48px; font-size: 12px; font-weight: 600; color: var(--text-strong); }
+  .px { font-size: 11px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+  <div class="row"><span class="name">2</span><div class="bar" style="width:8px"></div><span class="px">8px — chip gaps</span></div>
+  <div class="row"><span class="name">4</span><div class="bar" style="width:16px"></div><span class="px">16px — base unit</span></div>
+  <div class="row"><span class="name">6</span><div class="bar" style="width:24px"></div><span class="px">24px — default card padding</span></div>
+  <div class="row"><span class="name">8</span><div class="bar" style="width:32px"></div><span class="px">32px — large card padding</span></div>
+  <div class="row"><span class="name">16</span><div class="bar" style="width:64px"></div><span class="px">64px — section padding (mobile)</span></div>
+  <div class="row"><span class="name">24</span><div class="bar" style="width:96px"></div><span class="px">96px — section padding (desktop)</span></div>
+</body>
+</html>

@@ -187,8 +187,8 @@ export default function ListerDashboardPage() {
     return (
       <>
         <SiteNav />
-        <main className="min-h-screen bg-primary flex items-center justify-center">
-          <p className="text-white text-lg">Loading your dashboard…</p>
+        <main className="min-h-screen bg-canvas flex items-center justify-center">
+          <p className="text-ink-muted text-lg">Loading your dashboard…</p>
         </main>
       </>
     )
@@ -197,57 +197,78 @@ export default function ListerDashboardPage() {
   return (
     <>
       <SiteNav />
-      <main className="min-h-screen bg-primary">
-        <section className="py-16 md:py-24">
-          <div className="mx-auto w-full max-w-6xl px-4 md:px-8">
-            {/* Balance - Button Style */}
-            <div className="mb-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-              <div className="bg-white rounded-xl border-2 border-white/20 shadow-lg px-6 sm:px-8 py-4 flex items-center gap-3 min-w-0">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <svg className="w-7 h-7 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="text-left">
-                  <p className="text-xs text-ink/60 uppercase tracking-wide font-medium">Available Balance</p>
-                  <h2 className="text-xl md:text-2xl font-bold text-ink" aria-busy={balanceLoading}>
-                    {balanceLabel}
-                  </h2>
-                </div>
-              </div>
+      <main className="min-h-screen bg-canvas">
+        <div className="swifto-content py-10 md:py-12 pb-20">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-14 h-14 rounded-full bg-brand-soft flex items-center justify-center shrink-0">
+              <svg className="w-7 h-7 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm text-ink-muted">Welcome back,</p>
+              <h1 className="text-2xl md:text-3xl font-bold text-ink">{displayName || 'User'}</h1>
+            </div>
+          </div>
 
-              {depositSuccessBanner && !balanceLoading && (
-                <p className="text-sm text-white/90 sm:max-w-md">
-                  Deposit received. Your balance has been updated.
+          <div className="grid lg:grid-cols-[1.1fr_2fr] gap-5 mb-10">
+            <div className="rounded-2xl bg-hero-band text-white p-6 md:p-7 relative overflow-hidden">
+              <div className="relative z-10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                  </div>
+                  <span className="text-sm font-semibold text-white/90">Available balance</span>
+                </div>
+                <p className="font-display text-[46px] font-extrabold mt-4 leading-none" aria-busy={balanceLoading}>
+                  {balanceLabel}
                 </p>
-              )}
-              
-              {/* Deposit CTA Button */}
-              <button
-                onClick={() => setShowDeposit(true)}
-                disabled={balanceLoading}
-                className="bg-white text-primary rounded-xl px-6 py-3 font-semibold hover:bg-canvas transition-all duration-300 shadow-lg hover:shadow-xl border-2 border-white/20 hover:border-white/40 whitespace-nowrap min-h-[48px]"
-              >
-                Deposit Funds
-              </button>
+                {depositSuccessBanner && !balanceLoading && (
+                  <p className="text-sm text-white/90 mt-2">Deposit received. Your balance has been updated.</p>
+                )}
+                <button
+                  onClick={() => setShowDeposit(true)}
+                  disabled={balanceLoading}
+                  className="mt-5 h-11 px-6 rounded-[14px] bg-white text-brand-deep font-semibold hover:bg-canvas transition-colors disabled:opacity-60 w-full sm:w-auto"
+                >
+                  Deposit funds
+                </button>
+              </div>
+              <span className="absolute w-48 h-48 rounded-full bg-primary/35 blur-3xl -right-10 -bottom-16 pointer-events-none" aria-hidden />
             </div>
 
-            {/* Welcome Message - Right Side */}
-            <div className="mb-6 flex justify-center md:justify-end md:pr-8 -mt-8 md:-mt-12">
-              <h2 className="text-white font-semibold text-2xl md:text-3xl">
-                Welcome back, {displayName || 'User'}!
-              </h2>
+            <div className="grid sm:grid-cols-3 gap-4">
+              {[
+                { label: 'Active jobs', value: String(activeJobCount), sub: pendingApplicationCount > 0 ? `${pendingApplicationCount} pending apps` : 'listings' },
+                { label: 'Completed', value: '—', sub: 'view history' },
+                { label: 'Balance', value: balanceLoading ? '…' : balanceLabel.replace('$', ''), sub: 'NZD available' },
+              ].map((s) => (
+                <div key={s.label} className="swifto-card p-5 flex flex-col justify-between min-h-[120px]">
+                  <div className="w-10 h-10 rounded-xl bg-brand-soft flex items-center justify-center">
+                    <svg className="w-5 h-5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                  </div>
+                  <div className="mt-4">
+                    <p className="text-2xl font-extrabold text-ink">{s.value}</p>
+                    <p className="text-sm font-semibold text-ink mt-0.5">{s.label}</p>
+                    <p className="text-xs text-ink-muted">{s.sub}</p>
+                  </div>
+                </div>
+              ))}
             </div>
+          </div>
 
-            {/* Dashboard Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {/* Profile Card */}
               <Link 
                 href="/profile/lister"
-                className="bg-white rounded-2xl border border-ink/15 shadow-sm p-6 aspect-square flex flex-col items-center justify-center gap-4 hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-primary/50 cursor-pointer"
+                className="swifto-card swifto-card-hover p-6 aspect-square flex flex-col items-center justify-center gap-4 cursor-pointer"
               >
-                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-                  <svg className="w-12 h-12 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-16 h-16 rounded-2xl bg-brand-soft flex items-center justify-center">
+                  <svg className="w-8 h-8 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 </div>
@@ -265,10 +286,10 @@ export default function ListerDashboardPage() {
                   e.stopPropagation()
                   setShowDeposit(true)
                 }}
-                className="w-full bg-white rounded-2xl border border-ink/15 shadow-sm p-6 aspect-square flex flex-col items-center justify-center gap-4 hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-primary/50 cursor-pointer text-left"
+                className="w-full swifto-card swifto-card-hover p-6 aspect-square flex flex-col items-center justify-center gap-4 cursor-pointer text-left"
               >
-                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-                  <svg className="w-12 h-12 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-16 h-16 rounded-2xl bg-brand-soft flex items-center justify-center">
+                  <svg className="w-8 h-8 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
                 </div>
@@ -281,10 +302,10 @@ export default function ListerDashboardPage() {
               {/* Post a Job Card */}
               <Link 
                 href="/dashboard/lister/post-job"
-                className="bg-white rounded-2xl border border-ink/15 shadow-sm p-6 aspect-square flex flex-col items-center justify-center gap-4 hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-primary/50 cursor-pointer"
+                className="swifto-card swifto-card-hover p-6 aspect-square flex flex-col items-center justify-center gap-4 cursor-pointer"
               >
-                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-                  <svg className="w-12 h-12 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-16 h-16 rounded-2xl bg-brand-soft flex items-center justify-center">
+                  <svg className="w-8 h-8 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
                 </div>
@@ -297,10 +318,10 @@ export default function ListerDashboardPage() {
               {/* Browse Jobs Card */}
               <Link 
                 href="/browse"
-                className="bg-white rounded-2xl border border-ink/15 shadow-sm p-6 aspect-square flex flex-col items-center justify-center gap-4 hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-primary/50 cursor-pointer"
+                className="swifto-card swifto-card-hover p-6 aspect-square flex flex-col items-center justify-center gap-4 cursor-pointer"
               >
-                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-                  <svg className="w-12 h-12 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-16 h-16 rounded-2xl bg-brand-soft flex items-center justify-center">
+                  <svg className="w-8 h-8 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </div>
@@ -313,10 +334,10 @@ export default function ListerDashboardPage() {
               {/* Jobs Completed Card */}
               <Link 
                 href="/dashboard/lister/jobs-completed"
-                className="bg-white rounded-2xl border border-ink/15 shadow-sm p-6 aspect-square flex flex-col items-center justify-center gap-4 hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-primary/50 cursor-pointer"
+                className="swifto-card swifto-card-hover p-6 aspect-square flex flex-col items-center justify-center gap-4 cursor-pointer"
               >
-                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-                  <svg className="w-12 h-12 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-16 h-16 rounded-2xl bg-brand-soft flex items-center justify-center">
+                  <svg className="w-8 h-8 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
@@ -329,10 +350,10 @@ export default function ListerDashboardPage() {
               {/* Active Jobs Card */}
               <Link 
                 href="/dashboard/lister/jobs-listed"
-                className="bg-white rounded-2xl border border-ink/15 shadow-sm p-6 aspect-square flex flex-col items-center justify-center gap-4 hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-primary/50 cursor-pointer"
+                className="swifto-card swifto-card-hover p-6 aspect-square flex flex-col items-center justify-center gap-4 cursor-pointer"
               >
-                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-                  <svg className="w-12 h-12 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-16 h-16 rounded-2xl bg-brand-soft flex items-center justify-center">
+                  <svg className="w-8 h-8 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                 </div>
@@ -349,8 +370,7 @@ export default function ListerDashboardPage() {
                 </div>
               </Link>
             </div>
-          </div>
-        </section>
+        </div>
       </main>
       {showDeposit && (
         <DepositModal

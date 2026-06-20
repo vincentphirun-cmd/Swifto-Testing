@@ -1,0 +1,46 @@
+/* ---------------------------------------------------------------------------
+   Swifto — Typography tokens
+   One typeface: Inter (400 / 500 / 600 / 700). Headings are tight and bold;
+   body is set at a comfortable 1.75 line-height. Source: layout.tsx + product.
+--------------------------------------------------------------------------- */
+:root {
+  /* --- Family --- */
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-body: var(--font-sans);
+  --font-display: var(--font-sans);
+
+  /* --- Weights (only these four ship in the product) --- */
+  --weight-regular: 400;
+  --weight-medium: 500;   /* button labels, links */
+  --weight-semibold: 600; /* headings, emphasis */
+  --weight-bold: 700;     /* hero numbers, wordmark, big section heads */
+
+  /* --- Type scale (Tailwind rem steps used across Swifto) --- */
+  --text-xs: 0.75rem;    /* 12px — meta, fee fine print */
+  --text-sm: 0.875rem;   /* 14px — labels, secondary copy */
+  --text-base: 1rem;     /* 16px — body */
+  --text-lg: 1.125rem;   /* 18px — lead paragraphs */
+  --text-xl: 1.25rem;    /* 20px — card titles */
+  --text-2xl: 1.5rem;    /* 24px — sub-headings */
+  --text-3xl: 1.875rem;  /* 30px — section heads (mobile) */
+  --text-4xl: 2.25rem;   /* 36px — h1 (mobile) */
+  --text-5xl: 3rem;      /* 48px — page hero */
+  --text-6xl: 3.75rem;   /* 60px — landing hero (desktop) */
+
+  /* --- Line heights --- */
+  --leading-tight: 1.1;   /* display headlines */
+  --leading-snug: 1.25;   /* headings */
+  --leading-normal: 1.5;  /* default */
+  --leading-relaxed: 1.75;/* body copy (leading-7) */
+
+  /* --- Letter spacing --- */
+  --tracking-tight: -0.025em; /* applied to large headings */
+  --tracking-normal: 0;
+  --tracking-wide: 0.05em;    /* uppercase eyebrow labels */
+
+  /* --- Semantic roles --- */
+  --type-hero-weight: var(--weight-semibold);
+  --type-heading-weight: var(--weight-bold);
+  --type-body-weight: var(--weight-regular);
+  --type-label-weight: var(--weight-medium);
+}

@@ -1,0 +1,45 @@
+<!-- @dsCard group="Colors" viewport="700x180" name="Surfaces & primary tints" subtitle="Page, card, brand band, and primary/10 fills" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface-card); }
+  .grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; }
+  .band { border-radius: var(--radius-2xl); padding: 16px; border: 1px solid var(--border-card); }
+  .label { font-size: 12px; font-weight: 600; }
+  .sub { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+  .tints { display: flex; gap: 10px; align-items: center; }
+  .circ { width: 44px; height: 44px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+  <div class="grid">
+    <div>
+      <div class="band" style="background:var(--surface-page); margin-bottom:14px">
+        <div class="band" style="background:var(--surface-card); margin:0">
+          <div class="label" style="color:var(--text-strong)">White card</div>
+          <div class="sub" style="color:var(--text-muted)">on canvas page background</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="band" style="background:var(--surface-brand); border-color:transparent; margin-bottom:14px">
+        <div class="label" style="color:var(--on-primary)">Brand band</div>
+        <div class="sub" style="color:var(--on-primary-90)">heroes & CTAs</div>
+      </div>
+      <div class="band" style="background:var(--surface-ink); border-color:transparent">
+        <div class="label" style="color:#fff">Ink band</div>
+        <div class="sub" style="color:rgba(255,255,255,.7)">final CTA / footer</div>
+      </div>
+    </div>
+  </div>
+  <div class="tints" style="margin-top:16px">
+    <div class="circ" style="background:var(--primary-10)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--swifto-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+    </div>
+    <div class="sub" style="color:var(--text-muted)"><b style="color:var(--text-strong)">primary/10</b> circle holds a primary-stroke icon — the recurring "trust" motif</div>
+  </div>
+</body>
+</html>

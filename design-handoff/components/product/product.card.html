@@ -1,0 +1,55 @@
+<!-- @dsCard group="Components" viewport="700x340" name="Product — JobCard & DashboardTile" subtitle="The job listing tile and dashboard nav tiles" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin: 0; padding: 24px; background: var(--surface-page); }
+  .group-label { font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--text-muted); margin: 0 0 12px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .section + .section { margin-top: 22px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+  const { JobCard, DashboardTile, Button } = window.SwiftoDesignSystem_8a726e;
+  const Icon = ({ d }) => (<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>);
+  function Demo() {
+    return (
+      <>
+        <div className="section">
+          <p className="group-label">Job cards</p>
+          <div className="grid2">
+            <JobCard title="Lawn mowing" detail="Backyard, ~50 sq m" pay="$45" location="Ponsonby, Auckland" onClick={() => {}} />
+            <JobCard title="Moving boxes" detail="2-bedroom flat" pay="$120" location="Newmarket, Auckland" urgent
+              actions={<>
+                <Button size="sm">Quick Apply</Button>
+                <Button size="sm" variant="outline">Apply</Button>
+              </>} />
+          </div>
+        </div>
+        <div className="section">
+          <p className="group-label">Dashboard tiles</p>
+          <div className="grid3">
+            <DashboardTile title="Profile" caption="View and edit your profile" onClick={() => {}}
+              icon={<Icon d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />} />
+            <DashboardTile title="Active Jobs" highlight="3 active" caption="2 pending" onClick={() => {}}
+              icon={<Icon d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />} />
+            <DashboardTile title="Achievements" caption="View your milestones" onClick={() => {}}
+              icon={<Icon d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />} />
+          </div>
+        </div>
+      </>
+    );
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { SiteNav } from '@/components/site-nav'
+import { PageHero } from '@/components/page-hero'
 import { useAuth } from '@/lib/auth-context'
 import { createClient } from '@/lib/supabase/client'
 
@@ -35,21 +36,14 @@ export default function TaxGstPage() {
   return (
     <>
       <SiteNav />
-      <main>
-        <section className="py-16 md:py-24 bg-primary">
-          <div className="mx-auto w-full max-w-6xl px-4 md:px-8">
-            <div className="text-center">
-              <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white">
-                Tax &amp; GST
-              </h1>
-              <p className="mt-4 text-lg text-white/90 max-w-2xl mx-auto">
-                Information about tax and GST for Swifto providers
-              </p>
-            </div>
-          </div>
-        </section>
+      <main className="bg-canvas">
+        <PageHero
+          title="Tax & GST"
+          subtitle="Information about tax and GST for Swifto providers"
+          centered
+        />
 
-        <section className="py-16 md:py-24 bg-white">
+        <section className="py-16 md:py-24">
           <div className="mx-auto w-full max-w-4xl px-4 md:px-8 space-y-12">
             <div>
               <h2 className="text-2xl font-semibold text-ink mb-4">GST</h2>

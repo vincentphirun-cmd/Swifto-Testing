@@ -2,28 +2,20 @@
 
 import Link from 'next/link'
 import { SiteNav } from '@/components/site-nav'
+import { PageHero } from '@/components/page-hero'
 
 export default function SafetyPage() {
   return (
     <>
       <SiteNav />
-      <main>
-        {/* Hero Section */}
-        <section className="py-16 md:py-24 bg-primary">
-          <div className="mx-auto w-full max-w-6xl px-4 md:px-8">
-            <div className="text-center">
-              <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white">
-                Safety
-              </h1>
-              <p className="mt-4 text-lg text-white/90 max-w-2xl mx-auto">
-                Your safety matters. Here&apos;s how to stay safe on Swifto and what to do if something goes wrong.
-              </p>
-            </div>
-          </div>
-        </section>
+      <main className="bg-canvas">
+        <PageHero
+          title="Safety"
+          subtitle="Your safety matters. Here's how to stay safe on Swifto and what to do if something goes wrong."
+          centered
+        />
 
-        {/* Content Section */}
-        <section className="py-16 md:py-24 bg-white">
+        <section className="py-16 md:py-24">
           <div className="mx-auto w-full max-w-4xl px-4 md:px-8">
             {/* On this page navigation */}
             <div className="mb-12 pb-8 border-b border-ink/10">

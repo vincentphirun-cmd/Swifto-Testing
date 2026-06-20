@@ -1,0 +1,27 @@
+<!-- @dsCard group="Colors" viewport="700x190" name="Brand palette" subtitle="The five Swifto blues + white" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface-card); }
+  .row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+  .sw { border-radius: var(--radius-xl); overflow: hidden; border: 1px solid var(--border-divider); }
+  .chip { height: 76px; }
+  .meta { padding: 8px 10px; }
+  .name { font-size: 13px; font-weight: 600; color: var(--text-strong); }
+  .hex { font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; text-transform: uppercase; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="sw"><div class="chip" style="background:var(--swifto-primary)"></div><div class="meta"><div class="name">Primary</div><div class="hex">#006494</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--swifto-secondary)"></div><div class="meta"><div class="name">Secondary</div><div class="hex">#247BA0</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--swifto-accent)"></div><div class="meta"><div class="name">Accent</div><div class="hex">#1B98E0</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--swifto-ink)"></div><div class="meta"><div class="name">Ink</div><div class="hex">#13293D</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--swifto-canvas)"></div><div class="meta"><div class="name">Canvas</div><div class="hex">#E8F1F2</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--swifto-white)"></div><div class="meta"><div class="name">White</div><div class="hex">#FFFFFF</div></div></div>
+  </div>
+</body>
+</html>

@@ -2,26 +2,20 @@
 
 import Link from 'next/link'
 import { SiteNav } from '@/components/site-nav'
+import { PageHero } from '@/components/page-hero'
 
 export default function CancellationPolicyPage() {
   return (
     <>
       <SiteNav />
-      <main>
-        <section className="py-16 md:py-24 bg-primary">
-          <div className="mx-auto w-full max-w-6xl px-4 md:px-8">
-            <div className="text-center">
-              <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white">
-                Student cancellation policy
-              </h1>
-              <p className="mt-4 text-lg text-white/90 max-w-2xl mx-auto">
-                Cancellation rules for students
-              </p>
-            </div>
-          </div>
-        </section>
+      <main className="bg-canvas">
+        <PageHero
+          title="Student cancellation policy"
+          subtitle="Cancellation rules for students"
+          centered
+        />
 
-        <section className="py-16 md:py-24 bg-white">
+        <section className="py-16 md:py-24">
           <div className="mx-auto w-full max-w-4xl px-4 md:px-8 space-y-8">
             <div className="prose prose-lg max-w-none text-ink/90">
               <h2 className="text-2xl font-semibold text-ink mb-4">Policy</h2>

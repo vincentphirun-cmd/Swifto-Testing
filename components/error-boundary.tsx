@@ -36,10 +36,10 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-primary">
-          <div className="text-center text-white">
+        <div className="min-h-screen flex items-center justify-center bg-canvas">
+          <div className="text-center text-ink">
             <h1 className="text-2xl font-bold mb-4">Something went wrong</h1>
-            <p className="text-white/80">Please refresh the page or try again later.</p>
+            <p className="text-ink-muted">Please refresh the page or try again later.</p>
           </div>
         </div>
       )

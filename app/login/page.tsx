@@ -6,6 +6,10 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth-context'
 import { SiteNav } from '@/components/site-nav'
+import { SwiftoWordmark } from '@/components/swifto-wordmark'
+import { DesignPhoto } from '@/components/design/design-photo'
+import { StarRating } from '@/components/design/star-rating'
+import { DESIGN_PHOTOS } from '@/lib/design-photos'
 import { captureEvent } from '@/lib/posthog'
 import { fetchUserRole, pickPostLoginPath } from '@/lib/user-role'
 
@@ -55,8 +59,8 @@ function LoginContent() {
   // Show loading state while checking auth
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-primary flex items-center justify-center">
-        <div className="text-white text-center">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
+        <div className="text-ink-muted text-center">
           <p>Loading...</p>
         </div>
       </div>
@@ -97,27 +101,23 @@ function LoginContent() {
   return (
     <>
       <SiteNav />
-      <main className="min-h-screen bg-primary">
-        <section className="py-16 md:py-24">
-          <div className="mx-auto w-full max-w-sm px-4 md:px-8">
-            <div className="bg-white rounded-2xl border border-ink/15 shadow-sm p-8 md:p-10 space-y-6">
-              <div className="text-center space-y-2">
-                <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-ink">
-                  Welcome back
-                </h1>
-                <p className="text-base text-ink/80">
-                  Log in to your Swifto account
-                </p>
-              </div>
+      <main className="min-h-screen bg-canvas">
+        <section className="swifto-content py-10 md:py-12 pb-16 md:pb-[72px] grid lg:grid-cols-2 gap-10 items-center min-h-[74vh]">
+          <div className="max-w-md w-full mx-auto lg:mx-0 lg:justify-self-center space-y-6">
+            <SwiftoWordmark asLink={false} />
+            <div>
+              <h1 className="text-[34px]">Welcome back</h1>
+              <p className="text-base text-ink-2 mt-2">Log in to pick up where you left off.</p>
+            </div>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 {error && (
                   <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800 text-sm">
                     {error}
                   </div>
                 )}
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-ink mb-2">
+                  <label htmlFor="email" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">
                     Email address
                   </label>
                   <input
@@ -127,17 +127,17 @@ function LoginContent() {
                     value={formData.email}
                     onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                     required
-                    className="w-full h-12 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
-                    placeholder="Enter your email"
+                    className="w-full h-[50px] px-4 rounded-btn border-[1.5px] border-line bg-white text-ink placeholder-ink-3 focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/15 transition-all"
+                    placeholder="mia@student.ac.nz"
                   />
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label htmlFor="password" className="block text-sm font-medium text-ink">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label htmlFor="password" className="block text-[13.5px] font-semibold text-ink-2">
                       Password
                     </label>
-                    <Link href="/forgot-password" className="text-sm text-accent hover:text-primary transition-colors">
+                    <Link href="/forgot-password" className="text-sm text-secondary hover:text-primary transition-colors">
                       Forgot password?
                     </Link>
                   </div>
@@ -148,7 +148,7 @@ function LoginContent() {
                     value={formData.password}
                     onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                     required
-                    className="w-full h-12 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
+                    className="w-full h-[50px] px-4 rounded-btn border-[1.5px] border-line bg-white text-ink placeholder-ink-3 focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/15 transition-all"
                     placeholder="Enter your password"
                   />
                 </div>
@@ -156,20 +156,29 @@ function LoginContent() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-12 rounded-xl bg-primary text-white font-medium hover:bg-secondary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="swifto-btn-primary w-full h-[58px] text-[17px] disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Logging in...' : 'Log in'}
                 </button>
               </form>
 
-              <div className="text-center">
-                <p className="text-sm text-ink/70">
-                  Don't have an account?{' '}
-                  <Link href="/signup" className="text-primary hover:text-accent font-medium transition-colors">
-                    Sign up
-                  </Link>
-                </p>
-              </div>
+              <p className="text-[14.5px] text-ink-2 text-center">
+                New to Swifto?{' '}
+                <Link href="/signup" className="text-secondary font-bold hover:text-primary transition-colors">
+                  Create an account
+                </Link>
+              </p>
+          </div>
+
+          <div className="relative hidden lg:block">
+            <DesignPhoto src={DESIGN_PHOTOS.heroSecond} height={480} className="shadow-pop" tint />
+            <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-transparent from-40% to-ink/72" />
+            <div className="absolute bottom-7 left-7 right-7 text-white">
+              <StarRating size={18} />
+              <p className="font-display text-[22px] font-bold mt-2.5 leading-snug">
+                &ldquo;Swifto helped me cover rent without dropping a single class.&rdquo;
+              </p>
+              <p className="text-sm text-white/85 mt-2">— Aroha, second-year student</p>
             </div>
           </div>
         </section>
@@ -181,8 +190,8 @@ function LoginContent() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-primary flex items-center justify-center">
-        <p className="text-white">Loading…</p>
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
+        <p className="text-ink-muted">Loading…</p>
       </div>
     }>
       <LoginContent />

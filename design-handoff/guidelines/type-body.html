@@ -1,0 +1,25 @@
+<!-- @dsCard group="Type" viewport="700x210" name="Body & labels" subtitle="Lead, body at 1.75, labels and meta" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 24px; background: var(--surface-card); }
+  .stack > * + * { margin-top: 14px; }
+  .lead { font-size: var(--text-lg); line-height: var(--leading-relaxed); color: var(--text-body); max-width: 52ch; }
+  .body { font-size: var(--text-base); line-height: var(--leading-relaxed); color: var(--text-body); max-width: 56ch; }
+  .label { font-size: var(--text-sm); font-weight: var(--weight-semibold); color: var(--text-strong); }
+  .meta { font-size: var(--text-xs); color: var(--text-muted); }
+  .tag { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+</style>
+</head>
+<body>
+  <div class="stack">
+    <div class="lead">Swifto is built for real life — when money feels tight and time feels short.</div>
+    <div class="body">Post a task in minutes, pick a verified student, and confirm when it's done. Payment is held securely and released only on completion.</div>
+    <div><span class="label">Email address</span> &nbsp; <span class="tag">label · 14px / semibold</span></div>
+    <div><span class="meta">Ponsonby, Auckland · 2 hours</span> &nbsp; <span class="tag">meta · 12px / muted</span></div>
+  </div>
+</body>
+</html>

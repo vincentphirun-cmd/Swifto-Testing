@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { mapJobRowToBrowseJob, type BrowseJob } from '@/lib/types'
 import { SiteNav } from '@/components/site-nav'
+import { DesignBadge } from '@/components/design/design-badge'
 import { useAuth } from '@/lib/auth-context'
 import { captureEvent } from '@/lib/posthog'
 import { LoadingSpinner } from '@/components/loading-spinner'
@@ -281,19 +282,32 @@ export default function BrowseJobsPage() {
   return (
     <>
       <SiteNav />
-      <main>
-        {/* Hero Section */}
-        <section className="py-12 md:py-16 bg-primary">
-          <div className="mx-auto w-full max-w-6xl px-4 md:px-8">
-            <h1 className="text-3xl md:text-5xl font-semibold tracking-tight text-white text-center">
-              Browse Jobs
-            </h1>
+      <main className="bg-canvas">
+        <section className="swifto-content pt-12 pb-2">
+          <DesignBadge tone="accent" className="mb-3">
+            {allJobs.length > 0 ? `${allJobs.length} open jobs in Auckland` : 'Open jobs in Auckland'}
+          </DesignBadge>
+          <h1 className="text-[clamp(2rem,4.4vw,3.125rem)] leading-tight">
+            Find work that fits
+            <br />
+            around your week.
+          </h1>
+          <div className="mt-6 relative max-w-2xl">
+            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-ink-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search jobs, suburbs, categories…"
+              className="w-full h-[52px] pl-11 pr-4 rounded-btn border-[1.5px] border-line bg-white text-[15.5px] text-ink placeholder-ink-3 focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/15"
+            />
           </div>
         </section>
 
-        {/* Jobs List Section */}
-        <section className="py-8 md:py-12 bg-canvas">
-          <div className="mx-auto w-full max-w-4xl px-4 md:px-8">
+        <section className="py-6 md:py-8 bg-canvas">
+          <div className="swifto-content max-w-4xl">
             {loading && (
               <div className="flex flex-col items-center justify-center py-16 gap-4">
                 <LoadingSpinner size="lg" />
@@ -318,32 +332,25 @@ export default function BrowseJobsPage() {
             )}
             {!loading && !error && allJobs.length > 0 && (
             <>
-            {/* Search and Filters */}
             <div className="mb-8 space-y-4">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1 relative">
-                  <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-ink/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search jobs by name, category, area..."
-                    className="w-full h-12 pl-12 pr-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary bg-white"
-                  />
-                </div>
+              <div className="flex flex-wrap gap-2">
+                {CATEGORY_OPTIONS.map((opt) => {
+                  const on = categoryFilter === opt.value
+                  return (
+                    <button
+                      key={opt.value || 'all'}
+                      type="button"
+                      onClick={() => setCategoryFilter(opt.value)}
+                      className={`px-4 py-2 rounded-full text-sm font-semibold border-[1.5px] transition-all duration-200 ease-swifto ${
+                        on ? 'bg-ink text-white border-transparent' : 'bg-white text-ink-2 border-line hover:border-ink/20'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  )
+                })}
               </div>
               <div className="flex flex-col sm:flex-row flex-wrap gap-4">
-                <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="h-11 px-4 rounded-xl border border-ink/20 text-ink focus:outline-none focus:ring-2 focus:ring-primary bg-white min-w-[160px]"
-                >
-                  {CATEGORY_OPTIONS.map((opt) => (
-                    <option key={opt.value || 'all'} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
                 <select
                   value={areaFilter}
                   onChange={(e) => setAreaFilter(e.target.value)}

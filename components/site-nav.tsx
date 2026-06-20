@@ -1,10 +1,25 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { createClient } from '@/lib/supabase/client'
+import { SwiftoWordmark } from '@/components/swifto-wordmark'
+
+function NavLink({ href, children, onClick }: { href: string; children: React.ReactNode; onClick?: () => void }) {
+  const pathname = usePathname()
+  const active = pathname === href || (href !== '/' && pathname?.startsWith(href))
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className={active ? 'swifto-nav-link swifto-nav-link-active' : 'swifto-nav-link'}
+    >
+      {children}
+    </Link>
+  )
+}
 
 export function SiteNav() {
   const router = useRouter()
@@ -38,67 +53,57 @@ export function SiteNav() {
     router.push('/login')
   }
 
+  const closeMobile = () => setMobileMenuOpen(false)
+
   const navLinks = (
     <>
-      <Link href="/" className="text-base text-ink hover:text-primary transition-colors py-2 md:py-0" onClick={() => setMobileMenuOpen(false)}>
-        Home
-      </Link>
-      <Link href="/mission" className="text-base text-ink hover:text-primary transition-colors py-2 md:py-0" onClick={() => setMobileMenuOpen(false)}>
-        Our Mission
-      </Link>
-      <Link href="/about" className="text-base text-ink hover:text-primary transition-colors py-2 md:py-0" onClick={() => setMobileMenuOpen(false)}>
-        About Swifto
-      </Link>
-      <Link href="/contact" className="text-base text-ink hover:text-primary transition-colors py-2 md:py-0" onClick={() => setMobileMenuOpen(false)}>
-        Contact
-      </Link>
+      <NavLink href="/" onClick={closeMobile}>Home</NavLink>
+      <NavLink href="/browse" onClick={closeMobile}>Find work</NavLink>
+      <NavLink href="/mission" onClick={closeMobile}>Our mission</NavLink>
       {loading ? (
-        <span className="text-base text-ink/50 py-2 md:py-0">Loading…</span>
+        <span className="text-[15px] text-ink-3 py-2 md:py-0">Loading…</span>
       ) : user ? (
         <>
-          <Link
+          <NavLink
             href={userRole === 'lister' ? '/dashboard/lister' : '/dashboard/student'}
-            className="text-base text-ink hover:text-primary transition-colors py-2 md:py-0"
-            onClick={() => setMobileMenuOpen(false)}
+            onClick={closeMobile}
           >
             Dashboard
-          </Link>
-          {userRole === 'lister' && (
-            <Link
-              href="/dashboard/lister/post-job"
-              className="h-12 px-6 rounded-xl bg-primary text-white font-medium hover:bg-secondary transition-colors flex items-center justify-center min-h-[44px] w-full md:w-auto"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Post a Job
-            </Link>
-          )}
-          {userRole === 'student' && (
-            <Link
-              href="/browse"
-              className="h-12 px-6 rounded-xl bg-primary text-white font-medium hover:bg-secondary transition-colors flex items-center justify-center min-h-[44px] w-full md:w-auto"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Find a Job
-            </Link>
-          )}
+          </NavLink>
           <button
-            onClick={() => { setMobileMenuOpen(false); handleLogout() }}
-            className="h-12 px-6 rounded-xl border border-ink/20 text-ink font-medium hover:bg-ink/5 transition-colors flex items-center justify-center min-h-[44px] w-full md:w-auto"
+            type="button"
+            onClick={() => { closeMobile(); handleLogout() }}
+            className="swifto-btn-ghost h-10 px-4 text-sm min-h-[44px] w-full md:w-auto"
           >
             Log out
           </button>
+          {userRole === 'lister' ? (
+            <Link
+              href="/dashboard/lister/post-job"
+              className="swifto-btn-primary h-10 px-4 text-sm min-h-[44px] w-full md:w-auto"
+              onClick={closeMobile}
+            >
+              Post a job
+            </Link>
+          ) : (
+            <Link
+              href="/browse"
+              className="swifto-btn-primary h-10 px-4 text-sm min-h-[44px] w-full md:w-auto"
+              onClick={closeMobile}
+            >
+              Find work
+            </Link>
+          )}
         </>
       ) : (
         <>
-          <Link href="/login" className="text-base text-ink hover:text-primary transition-colors py-2 md:py-0" onClick={() => setMobileMenuOpen(false)}>
-            Log in
-          </Link>
+          <NavLink href="/login" onClick={closeMobile}>Log in</NavLink>
           <Link
             href="/signup"
-            className="h-12 px-6 rounded-xl bg-primary text-white font-medium hover:bg-secondary transition-colors flex items-center justify-center min-h-[44px] w-full md:w-auto"
-            onClick={() => setMobileMenuOpen(false)}
+            className="swifto-btn-primary h-10 px-4 text-sm min-h-[44px] w-full md:w-auto"
+            onClick={closeMobile}
           >
-            Sign up
+            Get started
           </Link>
         </>
       )}
@@ -106,20 +111,16 @@ export function SiteNav() {
   )
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-ink/10 relative">
-      <nav className="mx-auto w-full max-w-6xl px-4 md:px-8 py-3 md:py-4 flex items-center justify-between gap-4">
-        <Link href="/" className="text-2xl md:text-4xl font-bold text-ink shrink-0">
-          Swifto
-        </Link>
-        {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-6">
-          {navLinks}
+    <header className="swifto-nav">
+      <nav className="swifto-content py-3.5 flex items-center justify-between gap-4">
+        <SwiftoWordmark />
+        <div className="hidden lg:flex items-center gap-6">
+          <div className="flex items-center gap-5">{navLinks}</div>
         </div>
-        {/* Mobile menu button */}
         <button
           type="button"
           onClick={() => setMobileMenuOpen((o) => !o)}
-          className="md:hidden p-2 -mr-2 rounded-lg text-ink hover:bg-ink/5 min-h-[44px] min-w-[44px] flex items-center justify-center"
+          className="lg:hidden p-2 -mr-2 rounded-lg text-ink hover:bg-brand-soft/50 min-h-[44px] min-w-[44px] flex items-center justify-center"
           aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
         >
           {mobileMenuOpen ? (
@@ -132,10 +133,9 @@ export function SiteNav() {
             </svg>
           )}
         </button>
-        {/* Mobile dropdown */}
         {mobileMenuOpen && (
-          <div className="absolute top-full left-0 right-0 bg-white border-b border-ink/10 shadow-lg md:hidden">
-            <div className="flex flex-col gap-1 px-4 py-4 max-h-[calc(100vh-4rem)] overflow-y-auto">
+          <div className="absolute top-full left-0 right-0 bg-canvas/95 backdrop-blur-md border-b border-line shadow-lg lg:hidden">
+            <div className="flex flex-col gap-2 px-6 py-4 max-h-[calc(100vh-4rem)] overflow-y-auto">
               {navLinks}
             </div>
           </div>

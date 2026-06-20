@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "design:preview": "npx --yes serve design-handoff/redesign -p 3456"
   },
   "dependencies": {
     "@stripe/stripe-js": "^8.7.0",

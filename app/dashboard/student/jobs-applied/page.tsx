@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth-context'
 import { SiteNav } from '@/components/site-nav'
+import { PageHero } from '@/components/page-hero'
 import { LoadingSpinner } from '@/components/loading-spinner'
 import { ErrorAlert } from '@/components/error-alert'
 import { FeeBreakdown } from '@/components/fee-breakdown'
@@ -194,8 +195,8 @@ export default function JobsAppliedPage() {
     return (
       <>
         <SiteNav />
-        <main className="min-h-screen bg-primary flex items-center justify-center">
-          <p className="text-white">Please log in to view your applications.</p>
+        <main className="min-h-screen bg-canvas flex items-center justify-center">
+          <p className="text-ink-muted">Please log in to view your applications.</p>
         </main>
       </>
     )
@@ -204,36 +205,28 @@ export default function JobsAppliedPage() {
   return (
     <>
       <SiteNav />
-      <main className="min-h-screen bg-primary">
-        <section className="py-16 md:py-24">
+      <main className="min-h-screen bg-canvas">
+        <PageHero
+          backHref="/dashboard/student"
+          backLabel="Back to Dashboard"
+          title="Active jobs"
+          subtitle="View your active job applications and their status"
+        />
+        <section className="py-8 md:py-12">
           <div className="mx-auto w-full max-w-6xl px-4 md:px-8">
-            <div className="mb-8">
-              <Link
-                href="/dashboard/student"
-                className="inline-flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-4"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Back to Dashboard
-              </Link>
-              <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">Active Jobs</h1>
-              <p className="text-white/80 text-lg">View your active job applications and their status</p>
-            </div>
-
             {loading ? (
               <div className="flex flex-col items-center justify-center py-16 gap-4">
-                <LoadingSpinner size="lg" variant="light" />
-                <p className="text-lg text-white/80">Loading applications…</p>
+                <LoadingSpinner size="lg" variant="default" />
+                <p className="text-lg text-ink-muted">Loading applications…</p>
               </div>
             ) : error ? (
-              <ErrorAlert message={error} onRetry={fetchApplications} variant="dark" className="max-w-xl" />
+              <ErrorAlert message={error} onRetry={fetchApplications}  className="max-w-xl" />
             ) : (
               <>
                 <div className="mb-8">
-                  <h2 className="text-2xl font-bold text-white mb-4">Active Applications</h2>
+                  <h2 className="text-2xl font-bold text-ink mb-4">Active Applications</h2>
                   {activeApps.length === 0 ? (
-                    <p className="text-white/80">No active applications. <Link href="/browse" className="text-primary hover:underline">Browse jobs</Link> to apply.</p>
+                    <p className="text-ink-muted">No active applications. <Link href="/browse" className="text-primary hover:underline">Browse jobs</Link> to apply.</p>
                   ) : (
                     <div className="space-y-4">
                       {activeApps.map((app) => (
@@ -336,9 +329,9 @@ export default function JobsAppliedPage() {
                 </div>
 
                 <div className="mt-12">
-                  <h2 className="text-2xl font-bold text-white mb-4">Past Applications</h2>
+                  <h2 className="text-2xl font-bold text-ink mb-4">Past Applications</h2>
                   {pastApps.length === 0 ? (
-                    <p className="text-white/80">No past applications.</p>
+                    <p className="text-ink-muted">No past applications.</p>
                   ) : (
                     <div className="space-y-4">
                       {pastApps.map((app) => (

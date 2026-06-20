@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth-context'
 import { SiteNav } from '@/components/site-nav'
+import { PageHero } from '@/components/page-hero'
 import { LoadingSpinner } from '@/components/loading-spinner'
 import { ErrorAlert } from '@/components/error-alert'
 import { isAbortError } from '@/lib/abort-error'
@@ -270,8 +271,8 @@ export default function JobsListedPage() {
     return (
       <>
         <SiteNav />
-        <main className="min-h-screen bg-primary flex items-center justify-center">
-          <p className="text-white">Please log in to view your jobs.</p>
+        <main className="min-h-screen bg-canvas flex items-center justify-center">
+          <p className="text-ink-muted">Please log in to view your jobs.</p>
         </main>
       </>
     )
@@ -280,32 +281,24 @@ export default function JobsListedPage() {
   return (
     <>
       <SiteNav />
-      <main className="min-h-screen bg-primary">
-        <section className="py-16 md:py-24">
+      <main className="min-h-screen bg-canvas">
+        <PageHero
+          backHref="/dashboard/lister"
+          backLabel="Back to Dashboard"
+          title="Active jobs"
+          subtitle="View and manage your active job listings"
+        />
+        <section className="py-8 md:py-12">
           <div className="mx-auto w-full max-w-6xl px-4 md:px-8">
-            <div className="mb-8">
-              <Link
-                href="/dashboard/lister"
-                className="inline-flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-4"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Back to Dashboard
-              </Link>
-              <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">Active Jobs</h1>
-              <p className="text-white/80 text-lg">View and manage your active job listings</p>
-            </div>
-
             {loading ? (
               <div className="flex flex-col items-center justify-center py-16 gap-4">
-                <LoadingSpinner size="lg" variant="light" />
-                <p className="text-lg text-white/80">Loading jobs…</p>
+                <LoadingSpinner size="lg" variant="default" />
+                <p className="text-lg text-ink-muted">Loading jobs…</p>
               </div>
             ) : error ? (
-              <ErrorAlert message={error} onRetry={fetchData} variant="dark" className="max-w-xl mx-auto" />
+              <ErrorAlert message={error} onRetry={fetchData}  className="max-w-xl mx-auto" />
             ) : jobs.length === 0 ? (
-              <div className="text-center py-16 text-white/80">
+              <div className="text-center py-16 text-ink-muted">
                 <p className="text-lg">No active jobs yet.</p>
                 <Link href="/dashboard/lister/post-job" className="text-primary hover:underline mt-2 inline-block">
                   Post a job

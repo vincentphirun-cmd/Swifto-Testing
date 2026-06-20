@@ -1,0 +1,73 @@
+<!-- @dsCard group="Components" viewport="700x300" name="Core — Card, Badge, IconCircle, Avatar" subtitle="Surfaces, status pills, icon discs & avatars" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin: 0; padding: 24px; background: var(--surface-page); }
+  .group-label { font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--text-muted); margin: 0 0 12px; }
+  .row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+  .section + .section { margin-top: 22px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+  const { Card, Badge, IconCircle, Avatar } = window.SwiftoDesignSystem_8a726e;
+  const Shield = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>);
+  const Lock = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>);
+  function Demo() {
+    return (
+      <>
+        <div className="section">
+          <p className="group-label">Badges</p>
+          <div className="row">
+            <Badge tone="brand">Verified</Badge>
+            <Badge tone="success">Applied</Badge>
+            <Badge tone="warning">Urgent rebook</Badge>
+            <Badge tone="danger">Payment failed</Badge>
+            <Badge tone="neutral">Flexible</Badge>
+            <Badge tone="brand" solid>New</Badge>
+          </div>
+        </div>
+        <div className="section">
+          <p className="group-label">Icon circles &amp; avatars</p>
+          <div className="row">
+            <IconCircle size="sm"><Shield /></IconCircle>
+            <IconCircle size="md"><Lock /></IconCircle>
+            <IconCircle size="lg"><Shield /></IconCircle>
+            <Avatar name="Maia Tipene" />
+            <Avatar name="Sam Lee" size="lg" />
+            <Avatar size="md" />
+          </div>
+        </div>
+        <div className="section">
+          <p className="group-label">Cards</p>
+          <div className="row" style={{ alignItems: 'stretch' }}>
+            <Card style={{ flex: 1, minWidth: 200 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <IconCircle><Shield /></IconCircle>
+                <div>
+                  <h3 style={{ fontWeight: 600, color: 'var(--text-strong)' }}>Verified users</h3>
+                  <p style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 2 }}>All students are verified</p>
+                </div>
+              </div>
+            </Card>
+            <Card interactive style={{ flex: 1, minWidth: 200 }}>
+              <h3 style={{ fontWeight: 600, color: 'var(--text-strong)' }}>Interactive card</h3>
+              <p style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 4 }}>Hover me — I lift &amp; turn blue.</p>
+            </Card>
+          </div>
+        </div>
+      </>
+    );
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>

@@ -49,8 +49,8 @@ export default function SignUpPage() {
   // Show loading state while checking auth
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-primary flex items-center justify-center">
-        <div className="text-white text-center">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
+        <div className="text-ink-muted text-center">
           <p>Loading...</p>
         </div>
       </div>
@@ -214,7 +214,7 @@ export default function SignUpPage() {
   return (
     <>
       <SiteNav />
-      <main className="min-h-screen bg-primary">
+      <main className="min-h-screen bg-canvas">
         <section className="py-16 md:py-24">
           <div className="mx-auto w-full max-w-5xl px-4 md:px-8">
             <div className="bg-white rounded-2xl border border-ink/15 shadow-sm p-8 md:p-10">

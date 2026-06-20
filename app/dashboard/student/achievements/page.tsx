@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { SiteNav } from '@/components/site-nav'
+import { PageHero } from '@/components/page-hero'
 import { useAuth } from '@/lib/auth-context'
 import {
   fetchStudentAchievementStats,
@@ -57,33 +58,19 @@ export default function AchievementsPage() {
   return (
     <>
       <SiteNav />
-      <main className="min-h-screen bg-primary">
-        <section className="py-16 md:py-24">
+      <main className="min-h-screen bg-canvas">
+        <PageHero
+          backHref="/dashboard/student"
+          backLabel="Back to Dashboard"
+          title="Achievements"
+          subtitle="Track your progress and unlock milestones"
+        />
+        <section className="py-8 md:py-12">
           <div className="mx-auto w-full max-w-6xl px-4 md:px-8">
-            {/* Page Header */}
-            <div className="mb-8">
-              <Link 
-                href="/dashboard/student"
-                className="inline-flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-4"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Back to Dashboard
-              </Link>
-              <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
-                Achievements
-              </h1>
-              <p className="text-white/80 text-lg">
-                Track your progress and unlock milestones
-              </p>
-            </div>
-
-            {/* Achievements Grid */}
             <div className="space-y-6">
               {/* Earnings Milestones Section */}
               <div>
-                <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">Earnings Milestones</h2>
+                <h2 className="text-2xl md:text-3xl font-bold text-ink mb-6">Earnings Milestones</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {/* Level 1 - $10 */}
                   <div className="bg-white rounded-2xl border-2 border-yellow-400 shadow-lg p-6 relative overflow-hidden hover:scale-105 hover:shadow-2xl transition-all duration-300 cursor-pointer">
@@ -215,7 +202,7 @@ export default function AchievementsPage() {
 
               {/* Job Type Achievements Section */}
               <div>
-                <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">Job Type Master</h2>
+                <h2 className="text-2xl md:text-3xl font-bold text-ink mb-6">Job Type Master</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {/* Moving Jobs */}
                   <div className="bg-white rounded-2xl border-2 border-blue-400 shadow-lg p-6 relative overflow-hidden hover:scale-105 hover:shadow-2xl transition-all duration-300 cursor-pointer">
@@ -341,7 +328,7 @@ export default function AchievementsPage() {
 
               {/* Total Jobs Completed Milestones */}
               <div>
-                <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">Total Jobs Milestones</h2>
+                <h2 className="text-2xl md:text-3xl font-bold text-ink mb-6">Total Jobs Milestones</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* 10 Jobs */}
                   <div className="bg-white rounded-2xl border-2 border-yellow-400 shadow-lg p-6 relative overflow-hidden hover:scale-105 hover:shadow-2xl transition-all duration-300 cursor-pointer">
