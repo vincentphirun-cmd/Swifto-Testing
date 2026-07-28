@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/client'
 import { ProfileIdentityNote, ProfileReadOnlyField } from '@/components/profile-read-only-field'
 import { ProfileEditableSection } from '@/components/profile-editable-section'
 import { StarRatingDisplay } from '@/components/star-rating'
+import { ProfileAvatarUpload } from '@/components/profile-avatar'
 import { ProfileJobHistoryList } from '@/components/profile-job-history'
 import {
   fetchListerProfileCompletions,
@@ -21,6 +22,7 @@ import { summarizeRatings } from '@/lib/ratings'
 type Profile = {
   first_name: string
   last_name: string
+  avatar_url?: string | null
   role?: 'lister' | 'student'
   location?: string | null
   bio?: string | null
@@ -81,7 +83,7 @@ export default function ListerProfilePage() {
       const supabase = createClient()
       const { data } = await supabase
         .from('profiles')
-        .select('first_name, last_name, role, location, bio, interests, preferred_job_categories')
+        .select('first_name, last_name, avatar_url, role, location, bio, interests, preferred_job_categories')
         .eq('id', user.id)
         .single()
       if (data) {
@@ -178,11 +180,13 @@ export default function ListerProfilePage() {
               
                 {/* Profile Picture */}
                 <div className="flex justify-center">
-                  <div className="w-32 h-32 rounded-full bg-primary/10 flex items-center justify-center border-4 border-primary/20">
-                    <svg className="w-16 h-16 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
+                  {user ? (
+                    <ProfileAvatarUpload
+                      userId={user.id}
+                      avatarUrl={profile?.avatar_url}
+                      onUploaded={(url) => setProfile((prev) => (prev ? { ...prev, avatar_url: url } : prev))}
+                    />
+                  ) : null}
                 </div>
 
                 {/* Account details (fixed at signup) */}

@@ -8,6 +8,7 @@ import { SiteNav } from '@/components/site-nav'
 import { WithdrawModal } from '@/components/withdraw-modal'
 import { IconDisc } from '@/components/design/icon-disc'
 import { DesignBadge } from '@/components/design/design-badge'
+import { ProfileAvatar } from '@/components/profile-avatar'
 import { DESIGN_PHOTOS } from '@/lib/design-photos'
 import { buildFullyCompletedJobIds, type JobCompletionVerify } from '@/lib/active-jobs'
 
@@ -41,9 +42,16 @@ function QuickIcon({ name }: { name: string }) {
   )
 }
 
+type Profile = {
+  first_name: string
+  last_name: string
+  balance_cents?: number
+  avatar_url?: string | null
+}
+
 export default function StudentDashboardPage() {
   const { user } = useAuth()
-  const [profile, setProfile] = useState<{ first_name: string; last_name: string; balance_cents?: number } | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [showWithdraw, setShowWithdraw] = useState(false)
   const [activeJobCount, setActiveJobCount] = useState(0)
   const [pendingJobCount, setPendingJobCount] = useState(0)
@@ -76,7 +84,7 @@ export default function StudentDashboardPage() {
       const supabase = createClient()
       const { data } = await supabase
         .from('profiles')
-        .select('first_name, last_name, balance_cents')
+        .select('first_name, last_name, balance_cents, avatar_url')
         .eq('id', user.id)
         .single()
       if (data) {
@@ -174,10 +182,13 @@ export default function StudentDashboardPage() {
       <main className="min-h-screen bg-canvas">
         <div className="swifto-content py-10 md:pt-10 md:pb-[84px]">
           <div className="flex items-center gap-3.5 mb-6 md:mb-[26px]">
-            <span className="w-[54px] h-[54px] rounded-full overflow-hidden shadow-card shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={DESIGN_PHOTOS.avatar1} alt="" className="w-full h-full object-cover" />
-            </span>
+            <div className="shrink-0">
+              <ProfileAvatar
+                avatarUrl={profile?.avatar_url || DESIGN_PHOTOS.avatar1}
+                sizeClassName="w-[54px] h-[54px] shadow-card"
+                iconClassName="w-7 h-7 text-primary"
+              />
+            </div>
             <div>
               <p className="text-sm text-ink-3">Welcome back,</p>
               <h1 className="text-[28px]">{displayName || 'User'}</h1>
@@ -237,7 +248,7 @@ export default function StudentDashboardPage() {
               onClose={() => setShowWithdraw(false)}
               onSuccess={async () => {
                 const supabase = createClient()
-                const { data } = await supabase.from('profiles').select('first_name, last_name, balance_cents').eq('id', user.id).single()
+                const { data } = await supabase.from('profiles').select('first_name, last_name, balance_cents, avatar_url').eq('id', user.id).single()
                 if (data) setProfile(data)
               }}
             />

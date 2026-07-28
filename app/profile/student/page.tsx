@@ -11,6 +11,7 @@ import { InfoTooltip } from '@/components/info-tooltip'
 import { ProfileIdentityNote, ProfileReadOnlyField } from '@/components/profile-read-only-field'
 import { ProfileEditableSection } from '@/components/profile-editable-section'
 import { StarRatingDisplay } from '@/components/star-rating'
+import { ProfileAvatarUpload } from '@/components/profile-avatar'
 import { ProfileJobHistoryList } from '@/components/profile-job-history'
 import {
   fetchStudentProfileCompletions,
@@ -23,6 +24,7 @@ import { summarizeRatings } from '@/lib/ratings'
 type Profile = {
   first_name: string
   last_name: string
+  avatar_url?: string | null
   university: string | null
   gst_registered?: boolean
   gst_number?: string | null
@@ -95,7 +97,7 @@ export default function StudentProfilePage() {
       const { data } = await supabase
         .from('profiles')
         .select(
-          'first_name, last_name, university, gst_registered, gst_number, field_of_study, interests, academic_achievements, extracurricular_achievements, role, total_jobs, total_earnings_cents'
+                  'first_name, last_name, avatar_url, university, gst_registered, gst_number, field_of_study, interests, academic_achievements, extracurricular_achievements, role, total_jobs, total_earnings_cents'
         )
         .eq('id', user.id)
         .single()
@@ -251,11 +253,13 @@ export default function StudentProfilePage() {
               
                 {/* Profile Picture */}
                 <div className="flex justify-center">
-                  <div className="w-32 h-32 rounded-full bg-primary/10 flex items-center justify-center border-4 border-primary/20">
-                    <svg className="w-16 h-16 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
+                  {user ? (
+                    <ProfileAvatarUpload
+                      userId={user.id}
+                      avatarUrl={profile?.avatar_url}
+                      onUploaded={(url) => setProfile((prev) => (prev ? { ...prev, avatar_url: url } : prev))}
+                    />
+                  ) : null}
                 </div>
 
                 {/* Account details (fixed at signup) */}

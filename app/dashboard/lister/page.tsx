@@ -6,12 +6,13 @@ import { useAuth } from '@/lib/auth-context'
 import { createClient } from '@/lib/supabase/client'
 import { SiteNav } from '@/components/site-nav'
 import { DepositModal } from '@/components/deposit-modal'
+import { ProfileAvatar } from '@/components/profile-avatar'
 import { captureEvent } from '@/lib/posthog'
 import { buildFullyCompletedJobIds, type JobCompletionVerify } from '@/lib/active-jobs'
 
 export default function ListerDashboardPage() {
   const { user, loading: authLoading } = useAuth()
-  const [profile, setProfile] = useState<{ first_name: string; last_name: string; balance_cents?: number } | null>(null)
+  const [profile, setProfile] = useState<{ first_name: string; last_name: string; balance_cents?: number; avatar_url?: string | null } | null>(null)
   const [profileLoading, setProfileLoading] = useState(true)
   const [sessionRefreshing, setSessionRefreshing] = useState(false)
   const [depositSuccessBanner, setDepositSuccessBanner] = useState(false)
@@ -90,7 +91,7 @@ export default function ListerDashboardPage() {
       const supabase = createClient()
       const { data } = await supabase
         .from('profiles')
-        .select('first_name, last_name, balance_cents')
+        .select('first_name, last_name, balance_cents, avatar_url')
         .eq('id', userId)
         .single()
 
@@ -105,6 +106,7 @@ export default function ListerDashboardPage() {
             first_name: (user as any).user_metadata?.first_name ?? '',
             last_name: (user as any).user_metadata?.last_name ?? '',
             balance_cents: 0,
+            avatar_url: null,
           }
         })
       }
@@ -200,11 +202,7 @@ export default function ListerDashboardPage() {
       <main className="min-h-screen bg-canvas">
         <div className="swifto-content py-10 md:py-12 pb-20">
           <div className="flex items-center gap-4 mb-8">
-            <div className="w-14 h-14 rounded-full bg-brand-soft flex items-center justify-center shrink-0">
-              <svg className="w-7 h-7 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </div>
+            <ProfileAvatar avatarUrl={profile?.avatar_url} sizeClassName="w-14 h-14 shrink-0" iconClassName="w-7 h-7 text-primary" />
             <div>
               <p className="text-sm text-ink-muted">Welcome back,</p>
               <h1 className="text-2xl md:text-3xl font-bold text-ink">{displayName || 'User'}</h1>
