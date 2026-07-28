@@ -17,10 +17,10 @@ export function useRequireRole(requiredRole: UserRole, options?: { pauseGuard?: 
   const pauseGuard = options?.pauseGuard ?? false
 
   useEffect(() => {
-    setRoleReady(false)
     if (authLoading || pauseGuard) return
 
     if (!user?.id) {
+      setRoleReady(false)
       const returnPath =
         typeof window !== 'undefined'
           ? `${window.location.pathname}${window.location.search}`
@@ -49,6 +49,6 @@ export function useRequireRole(requiredRole: UserRole, options?: { pauseGuard?: 
   return {
     user,
     authLoading,
-    roleReady: roleReady && !!user && !authLoading,
+    roleReady: roleReady && !!user,
   }
 }

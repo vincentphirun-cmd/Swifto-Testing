@@ -11,9 +11,9 @@ type Props = {
 }
 
 export function DashboardRoleGuard({ role, pauseGuard, children }: Props) {
-  const { authLoading, roleReady } = useRequireRole(role, { pauseGuard })
+  const { user, authLoading, roleReady } = useRequireRole(role, { pauseGuard })
 
-  if (authLoading || !roleReady) {
+  if ((!user && authLoading) || !roleReady) {
     return (
       <>
         <SiteNav />

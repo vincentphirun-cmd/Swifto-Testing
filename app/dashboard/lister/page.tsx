@@ -1,14 +1,25 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { createClient } from '@/lib/supabase/client'
 import { SiteNav } from '@/components/site-nav'
 import { DepositModal } from '@/components/deposit-modal'
+import { IconDisc } from '@/components/design/icon-disc'
+import { DesignBadge } from '@/components/design/design-badge'
 import { ProfileAvatar } from '@/components/profile-avatar'
 import { captureEvent } from '@/lib/posthog'
 import { buildFullyCompletedJobIds, type JobCompletionVerify } from '@/lib/active-jobs'
+
+type ActiveListingRow = {
+  id: string
+  job_name: string
+  area: string
+  price: number
+  whenLabel: string
+  pendingCount: number
+}
 
 export default function ListerDashboardPage() {
   const { user, loading: authLoading } = useAuth()
@@ -18,7 +29,9 @@ export default function ListerDashboardPage() {
   const [depositSuccessBanner, setDepositSuccessBanner] = useState(false)
   const [showDeposit, setShowDeposit] = useState(false)
   const [activeJobCount, setActiveJobCount] = useState(0)
+  const [completedJobCount, setCompletedJobCount] = useState(0)
   const [pendingApplicationCount, setPendingApplicationCount] = useState(0)
+  const [activeListings, setActiveListings] = useState<ActiveListingRow[]>([])
   const depositReturnHandled = useRef(false)
 
   const displayName = useMemo(() => {
@@ -42,6 +55,41 @@ export default function ListerDashboardPage() {
     return null
   }, [user, profile])
 
+  const fetchProfile = useCallback(async () => {
+    if (!user) {
+      setProfile(null)
+      setProfileLoading(false)
+      return
+    }
+
+    setProfileLoading(true)
+    const supabase = createClient()
+
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, balance_cents, avatar_url')
+        .eq('id', user.id)
+        .single()
+
+      if (data) {
+        setProfile(data)
+      } else {
+        setProfile((prev) => {
+          if (prev) return prev
+          return {
+            first_name: (user as any).user_metadata?.first_name ?? '',
+            last_name: (user as any).user_metadata?.last_name ?? '',
+            balance_cents: 0,
+            avatar_url: null,
+          }
+        })
+      }
+    } finally {
+      setProfileLoading(false)
+    }
+  }, [user])
+
   // After Stripe redirect, refresh auth session before treating user as logged out
   useEffect(() => {
     if (depositReturnHandled.current) return
@@ -58,6 +106,7 @@ export default function ListerDashboardPage() {
       try {
         await supabase.auth.getSession()
         await supabase.auth.refreshSession()
+        await fetchProfile()
       } catch {
         // Session may still restore via auth listener
       }
@@ -75,78 +124,35 @@ export default function ListerDashboardPage() {
   }, [])
 
   useEffect(() => {
-    if (!user) {
-      if (!authLoading && !sessionRefreshing) {
-        setProfile(null)
-        setProfileLoading(false)
-      }
-      return
-    }
-
-    let cancelled = false
-    const userId = user.id
-
-    async function fetchProfile() {
-      setProfileLoading(true)
-      const supabase = createClient()
-      const { data } = await supabase
-        .from('profiles')
-        .select('first_name, last_name, balance_cents, avatar_url')
-        .eq('id', userId)
-        .single()
-
-      if (cancelled) return
-
-      if (data) {
-        setProfile(data)
-      } else {
-        setProfile((prev) => {
-          if (prev) return prev
-          return {
-            first_name: (user as any).user_metadata?.first_name ?? '',
-            last_name: (user as any).user_metadata?.last_name ?? '',
-            balance_cents: 0,
-            avatar_url: null,
-          }
-        })
-      }
-      setProfileLoading(false)
-    }
-
+    if (authLoading) return
     void fetchProfile()
-
-    if (depositSuccessBanner) {
-      const retry1 = setTimeout(() => { if (!cancelled) void fetchProfile() }, 1500)
-      const retry2 = setTimeout(() => { if (!cancelled) void fetchProfile() }, 3500)
-      return () => {
-        cancelled = true
-        clearTimeout(retry1)
-        clearTimeout(retry2)
-      }
-    }
-
-    return () => {
-      cancelled = true
-    }
-  }, [user?.id, authLoading, sessionRefreshing, depositSuccessBanner])
+  }, [authLoading, fetchProfile])
 
   useEffect(() => {
     async function fetchActiveCounts() {
       if (!user) {
         setActiveJobCount(0)
+        setCompletedJobCount(0)
         setPendingApplicationCount(0)
+        setActiveListings([])
         return
       }
       const supabase = createClient()
+      const { count: completedCountExact } = await supabase
+        .from('job_completions')
+        .select('*', { count: 'exact', head: true })
+        .eq('lister_id', user.id)
       const { data: jobsData } = await supabase
         .from('jobs')
-        .select('id, status')
+        .select('id, job_name, area, price, completion_date, is_flexible, status')
         .eq('lister_id', user.id)
         .in('status', ['active', 'in_progress'])
 
       if (!jobsData?.length) {
         setActiveJobCount(0)
+        setCompletedJobCount(completedCountExact ?? 0)
         setPendingApplicationCount(0)
+        setActiveListings([])
         return
       }
 
@@ -163,34 +169,64 @@ export default function ListerDashboardPage() {
       )
       const activeJobIds = jobsData.filter((j) => !fullyCompleted.has(j.id)).map((j) => j.id)
       setActiveJobCount(activeJobIds.length)
+      setCompletedJobCount(completedCountExact ?? 0)
 
       if (activeJobIds.length === 0) {
         setPendingApplicationCount(0)
+        setActiveListings([])
         return
       }
 
-      const { count } = await supabase
+      const { data: pendingApps, count } = await supabase
         .from('job_applications')
-        .select('*', { count: 'exact', head: true })
+        .select('job_id, status', { count: 'exact' })
         .in('job_id', activeJobIds)
         .eq('status', 'pending')
       setPendingApplicationCount(count ?? 0)
+
+      const pendingByJob: Record<string, number> = {}
+      for (const row of pendingApps ?? []) {
+        pendingByJob[row.job_id] = (pendingByJob[row.job_id] ?? 0) + 1
+      }
+
+      setActiveListings(
+        jobsData
+          .filter((job) => activeJobIds.includes(job.id))
+          .slice(0, 5)
+          .map((job) => ({
+            id: job.id,
+            job_name: job.job_name,
+            area: job.area,
+            price: job.price,
+            whenLabel: job.is_flexible
+              ? 'Flexible'
+              : job.completion_date
+                ? new Date(job.completion_date).toLocaleDateString('en-NZ', { day: 'numeric', month: 'short' })
+                : 'TBD',
+            pendingCount: pendingByJob[job.id] ?? 0,
+          }))
+      )
     }
     fetchActiveCounts()
   }, [user?.id])
 
   const balanceLoading = sessionRefreshing || profileLoading
-  const showDashboardContent = !sessionRefreshing && !!user
-  const balanceLabel = balanceLoading
-    ? 'Loading…'
-    : `$${((profile?.balance_cents ?? 0) / 100).toFixed(2)}`
+  const showDashboardContent = !!user
+  const hasKnownBalance = profile?.balance_cents != null
+  const balanceLabel = hasKnownBalance
+    ? `$${((profile?.balance_cents ?? 0) / 100).toFixed(2)}`
+    : balanceLoading
+      ? 'Loading…'
+      : '$0.00'
 
   if (!showDashboardContent) {
     return (
       <>
         <SiteNav />
         <main className="min-h-screen bg-canvas flex items-center justify-center">
-          <p className="text-ink-muted text-lg">Loading your dashboard…</p>
+          <p className="text-ink-muted text-lg">
+            {authLoading || sessionRefreshing ? 'Loading your dashboard…' : 'Please log in to continue.'}
+          </p>
         </main>
       </>
     )
@@ -223,13 +259,12 @@ export default function ListerDashboardPage() {
                 <p className="font-display text-[46px] font-extrabold mt-4 leading-none" aria-busy={balanceLoading}>
                   {balanceLabel}
                 </p>
-                {depositSuccessBanner && !balanceLoading && (
+                {depositSuccessBanner && (
                   <p className="text-sm text-white/90 mt-2">Deposit received. Your balance has been updated.</p>
                 )}
                 <button
                   onClick={() => setShowDeposit(true)}
-                  disabled={balanceLoading}
-                  className="mt-5 h-11 px-6 rounded-[14px] bg-white text-brand-deep font-semibold hover:bg-canvas transition-colors disabled:opacity-60 w-full sm:w-auto"
+                  className="mt-5 h-11 px-6 rounded-[14px] bg-white text-brand-deep font-semibold hover:bg-canvas transition-colors w-full sm:w-auto"
                 >
                   Deposit funds
                 </button>
@@ -238,10 +273,10 @@ export default function ListerDashboardPage() {
             </div>
 
             <div className="grid sm:grid-cols-3 gap-4">
-              {[
+                {[
                 { label: 'Active jobs', value: String(activeJobCount), sub: pendingApplicationCount > 0 ? `${pendingApplicationCount} pending apps` : 'listings' },
-                { label: 'Completed', value: '—', sub: 'view history' },
-                { label: 'Balance', value: balanceLoading ? '…' : balanceLabel.replace('$', ''), sub: 'NZD available' },
+                { label: 'Completed', value: String(completedJobCount), sub: 'all-time' },
+                  { label: 'Balance', value: hasKnownBalance ? balanceLabel.replace('$', '') : (balanceLoading ? '…' : '0.00'), sub: 'NZD available' },
               ].map((s) => (
                 <div key={s.label} className="swifto-card p-5 flex flex-col justify-between min-h-[120px]">
                   <div className="w-10 h-10 rounded-xl bg-brand-soft flex items-center justify-center">
@@ -259,115 +294,129 @@ export default function ListerDashboardPage() {
             </div>
           </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {/* Profile Card */}
-              <Link 
+          <div className="grid lg:grid-cols-[2fr_1.1fr] gap-4 md:gap-[18px]">
+            <div className="swifto-card p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl">Active jobs</h2>
+                <Link href="/dashboard/lister/jobs-listed" className="swifto-btn-ghost h-10 px-4 text-sm">
+                  View all
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </Link>
+              </div>
+              {activeListings.length === 0 ? (
+                <p className="text-ink-2 text-sm py-6 text-center">
+                  No active jobs yet.{' '}
+                  <Link href="/dashboard/lister/post-job" className="text-brand font-semibold hover:text-primary">Post a job</Link>
+                </p>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {activeListings.map((job) => (
+                    <Link
+                      key={job.id}
+                      href="/dashboard/lister/jobs-listed"
+                      className="flex items-center gap-3.5 p-3 rounded-2xl border border-line-card hover:border-brand/30 hover:bg-brand-soft/30 transition-colors"
+                    >
+                      <span className="w-[52px] h-[52px] rounded-xl bg-brand-soft shrink-0 flex items-center justify-center text-brand">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-[15.5px] truncate">{job.job_name}</p>
+                        <p className="text-[13px] text-ink-3 mt-0.5">{job.area} · {job.whenLabel}</p>
+                      </div>
+                      <DesignBadge tone={job.pendingCount > 0 ? 'warning' : 'brand'}>
+                        {job.pendingCount > 0 ? `${job.pendingCount} pending` : 'Active'}
+                      </DesignBadge>
+                      <span className="font-display font-extrabold text-primary text-lg shrink-0">${job.price}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-4 md:gap-[18px]">
+              <div className="swifto-card p-5 bg-primary-soft border-primary/20">
+                <div className="flex items-center gap-3">
+                  <IconDisc tone="accent" size={48} className="!bg-white">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </IconDisc>
+                  <div>
+                    <p className="font-extrabold text-base text-accent-deep">Need another listing?</p>
+                    <p className="text-[13px] text-ink-2 mt-0.5">Post a fresh job in a few taps.</p>
+                  </div>
+                </div>
+                <Link href="/dashboard/lister/post-job" className="swifto-btn-primary w-full mt-4 h-10 text-sm">
+                  Post a job
+                </Link>
+              </div>
+
+              <Link
                 href="/profile/lister"
-                className="swifto-card swifto-card-hover p-6 aspect-square flex flex-col items-center justify-center gap-4 cursor-pointer"
+                className="swifto-card swifto-card-hover p-4 flex items-center gap-3"
               >
-                <div className="w-16 h-16 rounded-2xl bg-brand-soft flex items-center justify-center">
-                  <svg className="w-8 h-8 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <IconDisc tone="brand" size={42}>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                </div>
-                <div className="text-center">
-                  <h3 className="text-xl font-semibold text-ink">Profile</h3>
-                  <p className="text-xs text-ink/70">View and edit your profile</p>
-                </div>
+                </IconDisc>
+                <span className="font-semibold text-[15px]">Edit profile</span>
+                <svg className="w-[18px] h-[18px] text-ink-3 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
               </Link>
 
-              {/* Deposit Card */}
               <button
                 type="button"
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  setShowDeposit(true)
-                }}
-                className="w-full swifto-card swifto-card-hover p-6 aspect-square flex flex-col items-center justify-center gap-4 cursor-pointer text-left"
+                onClick={() => setShowDeposit(true)}
+                className="w-full swifto-card swifto-card-hover p-4 flex items-center gap-3 text-left"
               >
-                <div className="w-16 h-16 rounded-2xl bg-brand-soft flex items-center justify-center">
-                  <svg className="w-8 h-8 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <IconDisc tone="brand" size={42}>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
-                </div>
-                <div className="text-center">
-                  <h3 className="text-xl font-semibold text-ink">Deposit</h3>
-                  <p className="text-xs text-ink/70">Add funds to your account</p>
-                </div>
+                </IconDisc>
+                <span className="font-semibold text-[15px]">Deposit funds</span>
+                <svg className="w-[18px] h-[18px] text-ink-3 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
               </button>
 
-              {/* Post a Job Card */}
-              <Link 
-                href="/dashboard/lister/post-job"
-                className="swifto-card swifto-card-hover p-6 aspect-square flex flex-col items-center justify-center gap-4 cursor-pointer"
-              >
-                <div className="w-16 h-16 rounded-2xl bg-brand-soft flex items-center justify-center">
-                  <svg className="w-8 h-8 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                </div>
-                <div className="text-center">
-                  <h3 className="text-xl font-semibold text-ink">Post a Job</h3>
-                  <p className="text-xs text-ink/70">Create a new job listing</p>
-                </div>
-              </Link>
-
-              {/* Browse Jobs Card */}
-              <Link 
-                href="/browse"
-                className="swifto-card swifto-card-hover p-6 aspect-square flex flex-col items-center justify-center gap-4 cursor-pointer"
-              >
-                <div className="w-16 h-16 rounded-2xl bg-brand-soft flex items-center justify-center">
-                  <svg className="w-8 h-8 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-                <div className="text-center">
-                  <h3 className="text-xl font-semibold text-ink">Browse Jobs</h3>
-                  <p className="text-xs text-ink/70">Search and find available jobs</p>
-                </div>
-              </Link>
-
-              {/* Jobs Completed Card */}
-              <Link 
+              <Link
                 href="/dashboard/lister/jobs-completed"
-                className="swifto-card swifto-card-hover p-6 aspect-square flex flex-col items-center justify-center gap-4 cursor-pointer"
+                className="swifto-card swifto-card-hover p-4 flex items-center gap-3"
               >
-                <div className="w-16 h-16 rounded-2xl bg-brand-soft flex items-center justify-center">
-                  <svg className="w-8 h-8 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <IconDisc tone="brand" size={42}>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                </div>
-                <div className="text-center">
-                  <h3 className="text-xl font-semibold text-ink">Jobs Completed</h3>
-                  <p className="text-xs text-ink/70">View your completed jobs</p>
-                </div>
+                </IconDisc>
+                <span className="font-semibold text-[15px]">Completed jobs</span>
+                <svg className="w-[18px] h-[18px] text-ink-3 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
               </Link>
 
-              {/* Active Jobs Card */}
-              <Link 
-                href="/dashboard/lister/jobs-listed"
-                className="swifto-card swifto-card-hover p-6 aspect-square flex flex-col items-center justify-center gap-4 cursor-pointer"
+              <Link
+                href="/browse"
+                className="swifto-card swifto-card-hover p-4 flex items-center gap-3"
               >
-                <div className="w-16 h-16 rounded-2xl bg-brand-soft flex items-center justify-center">
-                  <svg className="w-8 h-8 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                <IconDisc tone="brand" size={42}>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
-                </div>
-                <div className="text-center">
-                  <h3 className="text-xl font-semibold text-ink">Active Jobs</h3>
-                  <p className="text-sm font-medium text-primary mt-1">
-                    {activeJobCount} active
-                  </p>
-                  {pendingApplicationCount > 0 && (
-                    <p className="text-xs text-ink/70 mt-1">
-                      {pendingApplicationCount} pending
-                    </p>
-                  )}
-                </div>
+                </IconDisc>
+                <span className="font-semibold text-[15px]">Browse jobs</span>
+                <svg className="w-[18px] h-[18px] text-ink-3 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
               </Link>
             </div>
+          </div>
         </div>
       </main>
       {showDeposit && (

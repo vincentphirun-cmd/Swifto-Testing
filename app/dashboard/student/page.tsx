@@ -11,6 +11,7 @@ import { DesignBadge } from '@/components/design/design-badge'
 import { ProfileAvatar } from '@/components/profile-avatar'
 import { DESIGN_PHOTOS } from '@/lib/design-photos'
 import { buildFullyCompletedJobIds, type JobCompletionVerify } from '@/lib/active-jobs'
+import { fetchRatingSummary } from '@/lib/ratings'
 
 type ActiveJobRow = {
   job_id: string
@@ -56,6 +57,8 @@ export default function StudentDashboardPage() {
   const [activeJobCount, setActiveJobCount] = useState(0)
   const [pendingJobCount, setPendingJobCount] = useState(0)
   const [completedCount, setCompletedCount] = useState(0)
+  const [ratingAverage, setRatingAverage] = useState<number>(0)
+  const [ratingReviewCount, setRatingReviewCount] = useState(0)
   const [activeJobs, setActiveJobs] = useState<ActiveJobRow[]>([])
 
   const displayName = useMemo(() => {
@@ -106,33 +109,40 @@ export default function StudentDashboardPage() {
         setActiveJobCount(0)
         setPendingJobCount(0)
         setCompletedCount(0)
+        setRatingAverage(0)
+        setRatingReviewCount(0)
         setActiveJobs([])
         return
       }
       const supabase = createClient()
+      const ratingSummary = await fetchRatingSummary(supabase, user.id, 'student')
+      setRatingAverage(ratingSummary.averageRating)
+      setRatingReviewCount(ratingSummary.reviewCount)
       const { data: appsData } = await supabase
         .from('job_applications')
         .select('job_id, status')
         .eq('student_id', user.id)
         .in('status', ['pending', 'accepted'])
 
+      const { count: completedCountExact } = await supabase
+        .from('job_completions')
+        .select('*', { count: 'exact', head: true })
+        .eq('student_id', user.id)
+
       const jobIds = appsData?.length ? Array.from(new Set(appsData.map((a) => a.job_id))) : []
-      const [{ data: jobsData }, { data: compData }, { data: allCompData }] = await Promise.all([
+      const [{ data: jobsData }, { data: compData }] = await Promise.all([
         jobIds.length
           ? supabase.from('jobs').select('id, job_name, area, price, completion_date, is_flexible, status').in('id', jobIds)
           : Promise.resolve({ data: [] as { id: string; job_name: string; area: string; price: number; completion_date: string | null; is_flexible: boolean; status: string }[] }),
         jobIds.length
           ? supabase.from('job_completions').select('job_id, lister_verified_at, student_verified_at').eq('student_id', user.id).in('job_id', jobIds)
           : Promise.resolve({ data: [] as JobCompletionVerify[] }),
-        supabase.from('job_completions').select('job_id, lister_verified_at, student_verified_at').eq('student_id', user.id),
       ])
-
-      const completedTotal = (allCompData ?? []).filter((c) => c.lister_verified_at && c.student_verified_at).length
 
       if (!appsData?.length) {
         setActiveJobCount(0)
         setPendingJobCount(0)
-        setCompletedCount(completedTotal)
+        setCompletedCount(completedCountExact ?? 0)
         setActiveJobs([])
         return
       }
@@ -151,7 +161,7 @@ export default function StudentDashboardPage() {
       const activeApps = appsData.filter((a) => !fullyCompleted.has(a.job_id))
       setActiveJobCount(activeApps.length)
       setPendingJobCount(activeApps.filter((a) => a.status === 'pending').length)
-      setCompletedCount(completedTotal)
+      setCompletedCount(completedCountExact ?? 0)
 
       const rows: ActiveJobRow[] = activeApps.slice(0, 5).map((a) => {
         const job = jobsMap[a.job_id]
@@ -226,7 +236,13 @@ export default function StudentDashboardPage() {
               {[
                 { label: 'Active jobs', value: String(activeJobCount), sub: pendingJobCount > 0 ? `${pendingJobCount} pending` : 'applications', tone: 'brand' as const, icon: 'briefcase' },
                 { label: 'Completed', value: String(completedCount), sub: 'all-time', tone: 'success' as const, icon: 'check' },
-                { label: 'Rating', value: '—', sub: 'from reviews', tone: 'accent' as const, icon: 'star' },
+                {
+                  label: 'Rating',
+                  value: ratingReviewCount > 0 ? ratingAverage.toFixed(1) : '—',
+                  sub: ratingReviewCount > 0 ? `from ${ratingReviewCount} review${ratingReviewCount === 1 ? '' : 's'}` : 'no reviews yet',
+                  tone: 'accent' as const,
+                  icon: 'star',
+                },
               ].map((s) => (
                 <div key={s.label} className="swifto-card p-6 flex flex-col justify-between min-h-[140px]">
                   <IconDisc tone={s.tone}>
