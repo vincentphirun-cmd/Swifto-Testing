@@ -11,7 +11,7 @@ export const DESIGN_PHOTOS = {
   avatar2: img('1500648767791-00dcc994a43e', 200, 200),
   avatar3: img('1438761681033-6461ffad8d80', 200, 200),
   avatar4: img('1507003211169-0a1dd7228f2d', 200, 200),
-  jobLawn: img('1592420114436-2f6f1c3e6f0a', 600),
+  jobLawn: img('1625246333195-78d9c38ad449', 600),
   jobMoving: img('1530124566582-a618bc2615dc', 600),
   jobCleaning: img('1581578731548-c64695cc6952', 600),
   jobPet: img('1450778869180-41d0601e046e', 600),
