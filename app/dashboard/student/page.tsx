@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { createClient } from '@/lib/supabase/client'
 import { SiteNav } from '@/components/site-nav'
@@ -52,8 +52,10 @@ type Profile = {
 
 export default function StudentDashboardPage() {
   const { user } = useAuth()
+  const connectHandled = useRef(false)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [showWithdraw, setShowWithdraw] = useState(false)
+  const [connectBanner, setConnectBanner] = useState<string | null>(null)
   const [activeJobCount, setActiveJobCount] = useState(0)
   const [pendingJobCount, setPendingJobCount] = useState(0)
   const [completedCount, setCompletedCount] = useState(0)
@@ -102,6 +104,43 @@ export default function StudentDashboardPage() {
     }
     fetchProfile()
   }, [user])
+
+  useEffect(() => {
+    if (connectHandled.current) return
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const connect = params.get('connect')
+    if (connect !== 'return' && connect !== 'refresh') return
+    connectHandled.current = true
+
+    async function refreshConnect() {
+      const supabase = createClient()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!session?.access_token) return
+      try {
+        const res = await fetch('/api/stripe/connect/status', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        })
+        const data = await res.json()
+        if (data.payouts_enabled) {
+          setConnectBanner('Bank account connected. You can withdraw earnings.')
+          setShowWithdraw(true)
+        } else if (connect === 'refresh') {
+          setConnectBanner('Bank setup was interrupted. Open Withdraw to continue.')
+        } else {
+          setConnectBanner(
+            'Bank details submitted. Stripe may still be verifying — try withdrawing shortly.'
+          )
+        }
+      } catch {
+        setConnectBanner('Returned from bank setup. Open Withdraw to check status.')
+      }
+      window.history.replaceState({}, '', '/dashboard/student')
+    }
+    void refreshConnect()
+  }, [])
 
   useEffect(() => {
     async function fetchActiveCounts() {
@@ -217,11 +256,13 @@ export default function StudentDashboardPage() {
                   <span className="text-[13.5px] text-white/85 font-semibold">Available balance</span>
                 </div>
                 <p className="font-display font-extrabold text-[46px] mt-4 leading-none">${balance}</p>
+                {connectBanner && (
+                  <p className="text-sm text-white/90 mt-2">{connectBanner}</p>
+                )}
                 <button
                   type="button"
                   onClick={() => setShowWithdraw(true)}
-                  disabled={(profile?.balance_cents ?? 0) < 100}
-                  className="swifto-btn-white w-full mt-[18px] h-12 disabled:opacity-60"
+                  className="swifto-btn-white w-full mt-[18px] h-12"
                 >
                   Withdraw earnings
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

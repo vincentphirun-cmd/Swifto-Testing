@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAppOrigin } from '@/lib/app-url'
 import { getStripeServer } from '@/lib/stripe/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,15 +13,37 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const amountCents = typeof body?.amount_cents === 'number' ? Math.round(body.amount_cents) : Math.round(Number(body?.amount ?? 0) * 100)
+    const amountCents =
+      typeof body?.amount_cents === 'number'
+        ? Math.round(body.amount_cents)
+        : Math.round(Number(body?.amount ?? 0) * 100)
     if (!Number.isFinite(amountCents) || amountCents < 100) {
       return NextResponse.json({ error: 'Amount must be at least $1' }, { status: 400 })
     }
 
     const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser(token)
+    const {
+      data: { user },
+    } = await supabase.auth.getUser(token)
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const admin = createAdminClient()
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('role, identity_status')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.role === 'lister' && profile.identity_status !== 'verified') {
+      return NextResponse.json(
+        {
+          error: 'Verify your identity before depositing funds',
+          code: 'identity_required',
+        },
+        { status: 403 }
+      )
     }
 
     const stripe = getStripeServer()

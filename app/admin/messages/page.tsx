@@ -140,6 +140,9 @@ export default function AdminMessagesPage() {
                 <h1 className="text-3xl font-bold text-ink">Job messages (admin)</h1>
                 <p className="text-ink/70 mt-1">Read-only access to all chats, including closed and archived.</p>
               </div>
+              <Link href="/admin/identity" className="text-sm text-primary hover:text-accent">
+                Identity review →
+              </Link>
               <Link href="/admin/finance" className="text-sm text-primary hover:text-accent">
                 Finance export →
               </Link>

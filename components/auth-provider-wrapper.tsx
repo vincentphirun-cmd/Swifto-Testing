@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { AuthProvider } from '@/lib/auth-context'
 import { ErrorBoundary } from './error-boundary'
 import { PostHogProvider } from './posthog-provider'
+import { PasswordRecoveryRedirect } from './password-recovery-redirect'
 import { isAbortError } from '@/lib/abort-error'
 
 export function AuthProviderWrapper({ children }: { children: React.ReactNode }) {
@@ -24,7 +25,10 @@ export function AuthProviderWrapper({ children }: { children: React.ReactNode })
   return (
     <ErrorBoundary>
       <PostHogProvider>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <PasswordRecoveryRedirect />
+          {children}
+        </AuthProvider>
       </PostHogProvider>
     </ErrorBoundary>
   )

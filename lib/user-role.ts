@@ -1,17 +1,22 @@
 import type { SupabaseClient, User } from '@supabase/supabase-js'
 
-export type UserRole = 'lister' | 'student'
+export type UserRole = 'lister' | 'student' | 'admin'
 
 export function resolveRole(
   profileRole: string | null | undefined,
   metadataRole: string | null | undefined
 ): UserRole | null {
-  if (profileRole === 'lister' || profileRole === 'student') return profileRole
-  if (metadataRole === 'lister' || metadataRole === 'student') return metadataRole
+  if (profileRole === 'admin' || profileRole === 'lister' || profileRole === 'student') {
+    return profileRole
+  }
+  if (metadataRole === 'admin' || metadataRole === 'lister' || metadataRole === 'student') {
+    return metadataRole
+  }
   return null
 }
 
 export function dashboardPathForRole(role: UserRole | null): string {
+  if (role === 'admin') return '/admin'
   if (role === 'lister') return '/dashboard/lister'
   return '/dashboard/student'
 }
@@ -19,6 +24,7 @@ export function dashboardPathForRole(role: UserRole | null): string {
 /** True if this post-login redirect is safe for the user's role. */
 export function redirectAllowedForRole(path: string, role: UserRole | null): boolean {
   if (!path.startsWith('/') || path.startsWith('//')) return false
+  if (path.startsWith('/admin')) return role === 'admin'
   if (path.startsWith('/dashboard/lister')) return role === 'lister'
   if (path.startsWith('/dashboard/student')) return role === 'student'
   return true

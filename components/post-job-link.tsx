@@ -21,14 +21,18 @@ function usePostJobHref(): string {
       const supabase = createClient()
       const { data } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, identity_status')
         .eq('id', user.id)
         .single()
 
       if (cancelled) return
 
       if (data?.role === 'lister' || user.user_metadata?.role === 'lister') {
-        setHref('/dashboard/lister/post-job')
+        setHref(
+          data?.identity_status === 'verified'
+            ? '/dashboard/lister/post-job'
+            : '/dashboard/lister/verify-identity'
+        )
       } else if (data?.role === 'student' || user.user_metadata?.role === 'student') {
         setHref('/dashboard/student')
       } else {

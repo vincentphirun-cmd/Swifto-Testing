@@ -115,7 +115,10 @@ export default function AdminFinancePage() {
         <PageHero title="Finance export" subtitle="Download financial ledger data as Excel or CSV." />
         <section className="py-8 md:py-12">
           <div className="mx-auto w-full max-w-2xl px-4 md:px-8">
-            <p className="mb-8">
+            <p className="mb-8 flex flex-wrap gap-4">
+              <Link href="/admin/identity" className="text-brand hover:text-primary font-medium text-sm">
+                Lister identity review →
+              </Link>
               <Link href="/admin/messages" className="text-brand hover:text-primary font-medium text-sm">
                 View job message archive →
               </Link>

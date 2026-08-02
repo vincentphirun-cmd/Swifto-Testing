@@ -51,6 +51,7 @@ export async function POST(request: Request) {
     first_name,
     last_name,
     university: university ?? null,
+    identity_status: 'unverified',
   })
 
   if (insertError) {

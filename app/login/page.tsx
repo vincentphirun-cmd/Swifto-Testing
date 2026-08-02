@@ -46,6 +46,24 @@ function LoginContent() {
     void (async () => {
       try {
         const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.access_token) {
+          await fetch('/api/admin/check', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          }).catch(() => null)
+          const checkRes = await fetch('/api/admin/check', {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          }).catch(() => null)
+          const check = checkRes ? await checkRes.json().catch(() => null) : null
+          if (cancelled) return
+          if (check?.admin) {
+            const dest =
+              redirectTo?.startsWith('/admin') ? redirectTo : '/admin'
+            router.replace(dest)
+            return
+          }
+        }
         const role = await fetchUserRole(supabase, user)
         if (cancelled) return
         router.replace(pickPostLoginPath(role, redirectTo))
@@ -88,6 +106,23 @@ function LoginContent() {
       if (data.user) {
         captureEvent('logged_in')
         const redirectTo = searchParams.get('redirect')
+        const token = data.session?.access_token
+        if (token) {
+          await fetch('/api/admin/check', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+          }).catch(() => null)
+          const checkRes = await fetch('/api/admin/check', {
+            headers: { Authorization: `Bearer ${token}` },
+          }).catch(() => null)
+          const check = checkRes ? await checkRes.json().catch(() => null) : null
+          if (check?.admin) {
+            const dest =
+              redirectTo?.startsWith('/admin') ? redirectTo : '/admin'
+            router.replace(dest)
+            return
+          }
+        }
         const role = await fetchUserRole(supabase, data.user)
         router.replace(pickPostLoginPath(role, redirectTo))
       }

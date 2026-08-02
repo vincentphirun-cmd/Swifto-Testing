@@ -34,6 +34,25 @@ export default function PostJobPage() {
     if (authLoading || submitting || redirecting) return
     if (!user?.id) {
       router.replace('/login?redirect=/dashboard/lister/post-job')
+      return
+    }
+
+    let cancelled = false
+    void (async () => {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('profiles')
+        .select('identity_status')
+        .eq('id', user.id)
+        .single()
+      if (cancelled) return
+      if (data?.identity_status !== 'verified') {
+        router.replace('/dashboard/lister/verify-identity')
+      }
+    })()
+
+    return () => {
+      cancelled = true
     }
   }, [user?.id, authLoading, submitting, redirecting, router])
 
@@ -69,12 +88,20 @@ export default function PostJobPage() {
 
       const { data: profileRow, error: balanceErr } = await supabase
         .from('profiles')
-        .select('balance_cents')
+        .select('balance_cents, identity_status')
         .eq('id', user.id)
         .single()
 
       if (balanceErr || profileRow?.balance_cents == null) {
         setError('Could not verify your balance. Please try again.')
+        setSubmitting(false)
+        return
+      }
+
+      if (profileRow.identity_status !== 'verified') {
+        setError(
+          'Verify your identity before posting jobs. Go to Verify identity from your dashboard.'
+        )
         setSubmitting(false)
         return
       }

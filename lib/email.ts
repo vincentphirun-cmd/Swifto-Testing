@@ -116,6 +116,16 @@ export async function sendWithdrawalCompleted(toEmail: string, amountNzd: string
   await r.emails.send({ from: fromEmail, to: [toEmail], subject: 'Withdrawal completed', html: htmlWrap('Withdrawal completed', body) })
 }
 
+export async function sendRefundCompleted(toEmail: string, amountNzd: string): Promise<void> {
+  const r = getResend()
+  if (!r) return
+  const body = `
+    <p>Your refund of <strong>${escapeHtml(amountNzd)}</strong> has been sent back to your original payment card. It may take a few business days to appear on your statement.</p>
+    <p><a href="${appUrl}/dashboard/lister" style="color: #0d9488;">View dashboard</a></p>
+  `
+  await r.emails.send({ from: fromEmail, to: [toEmail], subject: 'Refund processed', html: htmlWrap('Refund processed', body) })
+}
+
 export async function sendPayoutToStudent(toEmail: string, amountNzd: string, jobName: string): Promise<void> {
   const r = getResend()
   if (!r) return

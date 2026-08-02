@@ -19,8 +19,9 @@ Transactional emails are sent via [Resend](https://resend.com). If `RESEND_API_K
 | Lister accepts student | Accepted student | Accept-application API |
 | Lister accepts student | Not-selected students | Accept-application API |
 | Deposit success | Lister | Stripe webhook `checkout.session.completed` |
-| Withdrawal requested | Student | Request-withdrawal API |
-| Withdrawal completed | Student | (Wire when Stripe payout webhook is added) |
+| Withdrawal requested | Student | (Deprecated — withdraw now completes immediately via Transfer) |
+| Withdrawal completed | Student | Request-withdrawal API after successful Transfer |
+| Refund to card | Lister | Request-refund API after successful Stripe refunds |
 | Payout to student | Student | Supabase DB webhook on `transactions` INSERT `job_payment_in` |
 | Job completed (both verified) | Lister + student | After verify-completion (client calls API, idempotent) |
 | Student cancels | Lister | Cancel-application API |

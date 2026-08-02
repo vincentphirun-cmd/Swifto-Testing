@@ -1,24 +1,41 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import type { EmailOtpType } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendWelcome } from '@/lib/email'
+import { ensureAdminRoleForUser, isAdminAccess } from '@/lib/admin-auth'
+import { dashboardPathForRole, resolveRole } from '@/lib/user-role'
+
+function safeNextPath(raw: string | null): string | null {
+  if (!raw) return null
+  if (raw.startsWith('/') && !raw.startsWith('//') && !raw.includes('\\')) return raw
+  return null
+}
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
+  const tokenHash = requestUrl.searchParams.get('token_hash')
+  const type = requestUrl.searchParams.get('type') as EmailOtpType | null
   const errorParam = requestUrl.searchParams.get('error')
-  const next = requestUrl.searchParams.get('next') || '/dashboard/student'
+  const isRecovery = type === 'recovery' || safeNextPath(requestUrl.searchParams.get('next')) === '/reset-password'
 
-  // Handle OAuth errors
   if (errorParam) {
     console.error('OAuth error:', errorParam)
-    return NextResponse.redirect(new URL(`/login?error=auth_failed&reason=${errorParam}`, requestUrl.origin))
+    return NextResponse.redirect(
+      new URL(`/login?error=auth_failed&reason=${errorParam}`, requestUrl.origin)
+    )
   }
 
-  if (!code) {
-    console.error('No code parameter in callback URL')
-    return NextResponse.redirect(new URL('/login?error=auth_failed&reason=no_code', requestUrl.origin))
+  if (!code && !(tokenHash && type)) {
+    console.error('No code/token_hash in callback URL')
+    return NextResponse.redirect(
+      new URL(
+        isRecovery ? '/forgot-password' : '/login?error=auth_failed&reason=no_code',
+        requestUrl.origin
+      )
+    )
   }
 
   try {
@@ -34,71 +51,98 @@ export async function GET(request: Request) {
           set(name: string, value: string, options: any) {
             try {
               cookieStore.set({ name, value, ...options })
-            } catch (error) {
-              // The `set` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing
-              // user sessions.
+            } catch {
+              // Ignored in Server Component contexts
             }
           },
           remove(name: string, options: any) {
             try {
               cookieStore.set({ name, value: '', ...options })
-            } catch (error) {
-              // The `delete` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing
-              // user sessions.
+            } catch {
+              // Ignored
             }
           },
         },
       }
     )
-    
-    // Exchange code for session (this will also set cookies)
-    const { data: sessionData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
-    
-    if (exchangeError) {
-      console.error('Error exchanging code for session:', exchangeError)
-      return NextResponse.redirect(new URL(`/login?error=auth_failed&reason=exchange_failed`, requestUrl.origin))
+
+    let userId: string | null = null
+    let userEmail: string | undefined
+    let userMetadata: Record<string, any> = {}
+
+    if (code) {
+      const { data: sessionData, error: exchangeError } =
+        await supabase.auth.exchangeCodeForSession(code)
+
+      if (exchangeError) {
+        console.error('Error exchanging code for session:', exchangeError)
+        return NextResponse.redirect(
+          new URL(
+            isRecovery
+              ? '/forgot-password'
+              : `/login?error=auth_failed&reason=exchange_failed`,
+            requestUrl.origin
+          )
+        )
+      }
+
+      const user = sessionData?.session?.user
+      if (!user) {
+        return NextResponse.redirect(
+          new URL(
+            isRecovery ? '/forgot-password' : `/login?error=auth_failed&reason=no_user`,
+            requestUrl.origin
+          )
+        )
+      }
+      userId = user.id
+      userEmail = user.email
+      userMetadata = user.user_metadata || {}
+    } else if (tokenHash && type) {
+      const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
+        type,
+        token_hash: tokenHash,
+      })
+      if (otpError || !otpData.user) {
+        console.error('verifyOtp error:', otpError)
+        return NextResponse.redirect(
+          new URL(
+            type === 'recovery' ? '/forgot-password' : `/login?error=auth_failed&reason=otp_failed`,
+            requestUrl.origin
+          )
+        )
+      }
+      userId = otpData.user.id
+      userEmail = otpData.user.email
+      userMetadata = otpData.user.user_metadata || {}
     }
 
-    if (!sessionData?.session) {
-      console.error('No session returned from exchange')
-      return NextResponse.redirect(new URL('/login?error=auth_failed&reason=no_session', requestUrl.origin))
+    if (!userId) {
+      return NextResponse.redirect(
+        new URL(`/login?error=auth_failed&reason=no_user`, requestUrl.origin)
+      )
     }
 
-    // Get user from the session
-    const user = sessionData.session.user
-    if (!user) {
-      console.error('No user in session')
-      return NextResponse.redirect(new URL('/login?error=auth_failed&reason=no_user', requestUrl.origin))
-    }
-
-    const userMetadata = user.user_metadata || {}
     let admin
     try {
       admin = createAdminClient()
     } catch (e) {
-      console.error('Supabase admin client init failed (missing SUPABASE_SERVICE_ROLE_KEY?):', e)
+      console.error('Supabase admin client init failed:', e)
       return NextResponse.redirect(
         new URL(`/login?error=auth_failed&reason=missing_service_role`, requestUrl.origin)
       )
     }
 
-    // Check if profile exists (service-role bypasses RLS)
-    const { data: profile } = await admin
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+    const { data: profile } = await admin.from('profiles').select('role').eq('id', userId).single()
 
-    // If no profile, create it using user_metadata from signup
     if (!profile) {
       const { error: insertError } = await admin.from('profiles').insert({
-        id: user.id,
+        id: userId,
         role: userMetadata.role || 'student',
-        first_name: userMetadata.first_name ?? user.email?.split('@')[0] ?? 'User',
+        first_name: userMetadata.first_name ?? userEmail?.split('@')[0] ?? 'User',
         last_name: userMetadata.last_name ?? '',
         university: userMetadata.university ?? null,
+        identity_status: 'unverified',
       })
 
       if (insertError) {
@@ -107,25 +151,45 @@ export async function GET(request: Request) {
           new URL(`/login?error=auth_failed&reason=profile_create_failed`, requestUrl.origin)
         )
       }
-      // Welcome email for new account (fire-and-forget)
-      if (user.email) {
-        sendWelcome(user.email, userMetadata.first_name).catch((e) => console.error('Welcome email error:', e))
+      if (userEmail && type !== 'recovery') {
+        sendWelcome(userEmail, userMetadata.first_name).catch((e) =>
+          console.error('Welcome email error:', e)
+        )
       }
     }
 
-    // Get profile again (or the newly created one) to determine redirect
+    if (type === 'recovery' || isRecovery) {
+      return NextResponse.redirect(new URL('/reset-password', requestUrl.origin))
+    }
+
+    await ensureAdminRoleForUser(userId, userEmail)
+
     const { data: finalProfile } = await admin
       .from('profiles')
       .select('role')
-      .eq('id', user.id)
+      .eq('id', userId)
       .single()
 
-    // Use DB role; fall back to user_metadata.role from signup when profile missing/failed
-    const role = finalProfile?.role ?? userMetadata.role ?? 'student'
-    const redirectPath = role === 'lister' ? '/dashboard/lister' : '/dashboard/student'
-    return NextResponse.redirect(new URL(redirectPath, requestUrl.origin))
+    let role = resolveRole(finalProfile?.role, userMetadata.role)
+    if (!role && isAdminAccess({ email: userEmail, role: finalProfile?.role })) {
+      role = 'admin'
+    }
+    if (!role) role = 'student'
+
+    const nextPath = safeNextPath(requestUrl.searchParams.get('next'))
+    if (role === 'admin') {
+      const dest = nextPath?.startsWith('/admin') ? nextPath : '/admin'
+      return NextResponse.redirect(new URL(dest, requestUrl.origin))
+    }
+
+    const defaultPath = dashboardPathForRole(role)
+    const dest =
+      nextPath && !nextPath.startsWith('/admin') ? nextPath : defaultPath
+    return NextResponse.redirect(new URL(dest, requestUrl.origin))
   } catch (err) {
     console.error('Auth callback error:', err)
-    return NextResponse.redirect(new URL(`/login?error=auth_failed&reason=exception`, requestUrl.origin))
+    return NextResponse.redirect(
+      new URL(`/login?error=auth_failed&reason=exception`, requestUrl.origin)
+    )
   }
 }

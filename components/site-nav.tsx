@@ -24,11 +24,11 @@ function NavLink({ href, children, onClick }: { href: string; children: React.Re
 export function SiteNav() {
   const router = useRouter()
   const { user, loading, signOut } = useAuth()
-  const [userRole, setUserRole] = useState<'lister' | 'student' | null>(null)
+  const [userRole, setUserRole] = useState<'lister' | 'student' | 'admin' | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
-    async function fetchUserRole() {
+    async function loadRole() {
       if (!user) {
         setUserRole(null)
         return
@@ -39,13 +39,37 @@ export function SiteNav() {
         .select('role')
         .eq('id', user.id)
         .single()
-      if (data?.role === 'lister' || data?.role === 'student') {
+      if (data?.role === 'admin' || data?.role === 'lister' || data?.role === 'student') {
         setUserRole(data.role)
-      } else if (user.user_metadata?.role === 'lister' || user.user_metadata?.role === 'student') {
+      } else if (
+        user.user_metadata?.role === 'admin' ||
+        user.user_metadata?.role === 'lister' ||
+        user.user_metadata?.role === 'student'
+      ) {
         setUserRole(user.user_metadata.role)
       }
+
+      // Bootstrap: ADMIN_EMAILS may still be lister until ensure-role runs
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.access_token && data?.role !== 'admin') {
+          const res = await fetch('/api/admin/check', {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          })
+          const check = await res.json()
+          if (check.admin) {
+            await fetch('/api/admin/check', {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${session.access_token}` },
+            }).catch(() => null)
+            setUserRole('admin')
+          }
+        }
+      } catch {
+        // ignore
+      }
     }
-    fetchUserRole()
+    loadRole()
   }, [user])
 
   const handleLogout = async () => {
@@ -55,20 +79,26 @@ export function SiteNav() {
 
   const closeMobile = () => setMobileMenuOpen(false)
 
+  const dashboardHref =
+    userRole === 'admin'
+      ? '/admin'
+      : userRole === 'lister'
+        ? '/dashboard/lister'
+        : '/dashboard/student'
+
   const navLinks = (
     <>
       <NavLink href="/" onClick={closeMobile}>Home</NavLink>
-      <NavLink href="/browse" onClick={closeMobile}>Find work</NavLink>
+      {userRole !== 'admin' && (
+        <NavLink href="/browse" onClick={closeMobile}>Find work</NavLink>
+      )}
       <NavLink href="/mission" onClick={closeMobile}>Our mission</NavLink>
       {loading ? (
         <span className="text-[15px] text-ink-3 py-2 md:py-0">Loading…</span>
       ) : user ? (
         <>
-          <NavLink
-            href={userRole === 'lister' ? '/dashboard/lister' : '/dashboard/student'}
-            onClick={closeMobile}
-          >
-            Dashboard
+          <NavLink href={dashboardHref} onClick={closeMobile}>
+            {userRole === 'admin' ? 'Admin' : 'Dashboard'}
           </NavLink>
           <button
             type="button"
@@ -77,7 +107,15 @@ export function SiteNav() {
           >
             Log out
           </button>
-          {userRole === 'lister' ? (
+          {userRole === 'admin' ? (
+            <Link
+              href="/admin/identity"
+              className="swifto-btn-primary h-10 px-4 text-sm min-h-[44px] w-full md:w-auto"
+              onClick={closeMobile}
+            >
+              Verify IDs
+            </Link>
+          ) : userRole === 'lister' ? (
             <Link
               href="/dashboard/lister/post-job"
               className="swifto-btn-primary h-10 px-4 text-sm min-h-[44px] w-full md:w-auto"

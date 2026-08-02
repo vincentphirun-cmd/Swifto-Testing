@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context'
 import { createClient } from '@/lib/supabase/client'
 import { SiteNav } from '@/components/site-nav'
 import { DepositModal } from '@/components/deposit-modal'
+import { RefundModal } from '@/components/refund-modal'
 import { IconDisc } from '@/components/design/icon-disc'
 import { DesignBadge } from '@/components/design/design-badge'
 import { ProfileAvatar } from '@/components/profile-avatar'
@@ -23,11 +24,19 @@ type ActiveListingRow = {
 
 export default function ListerDashboardPage() {
   const { user, loading: authLoading } = useAuth()
-  const [profile, setProfile] = useState<{ first_name: string; last_name: string; balance_cents?: number; avatar_url?: string | null } | null>(null)
+  const [profile, setProfile] = useState<{
+    first_name: string
+    last_name: string
+    balance_cents?: number
+    avatar_url?: string | null
+    identity_status?: string
+  } | null>(null)
   const [profileLoading, setProfileLoading] = useState(true)
   const [sessionRefreshing, setSessionRefreshing] = useState(false)
   const [depositSuccessBanner, setDepositSuccessBanner] = useState(false)
   const [showDeposit, setShowDeposit] = useState(false)
+  const [showRefund, setShowRefund] = useState(false)
+  const [refundSuccessBanner, setRefundSuccessBanner] = useState(false)
   const [activeJobCount, setActiveJobCount] = useState(0)
   const [completedJobCount, setCompletedJobCount] = useState(0)
   const [pendingApplicationCount, setPendingApplicationCount] = useState(0)
@@ -68,7 +77,7 @@ export default function ListerDashboardPage() {
     try {
       const { data } = await supabase
         .from('profiles')
-        .select('first_name, last_name, balance_cents, avatar_url')
+        .select('first_name, last_name, balance_cents, avatar_url, identity_status')
         .eq('id', user.id)
         .single()
 
@@ -213,6 +222,8 @@ export default function ListerDashboardPage() {
   const balanceLoading = sessionRefreshing || profileLoading
   const showDashboardContent = !!user
   const hasKnownBalance = profile?.balance_cents != null
+  const identityStatus = profile?.identity_status ?? 'unverified'
+  const identityVerified = identityStatus === 'verified'
   const balanceLabel = hasKnownBalance
     ? `$${((profile?.balance_cents ?? 0) / 100).toFixed(2)}`
     : balanceLoading
@@ -245,6 +256,41 @@ export default function ListerDashboardPage() {
             </div>
           </div>
 
+          {!identityVerified && !profileLoading && (
+            <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <p className="font-semibold text-ink">
+                  {identityStatus === 'pending'
+                    ? 'Identity verification pending'
+                    : identityStatus === 'rejected'
+                      ? 'Identity verification rejected'
+                      : 'Verify your identity to continue'}
+                </p>
+                <p className="text-sm text-ink/70 mt-0.5">
+                  {identityStatus === 'pending'
+                    ? 'We’re reviewing your documents. Deposit and posting unlock after approval.'
+                    : 'Deposit funds and post jobs unlock after we approve your ID.'}
+                </p>
+              </div>
+              {identityStatus !== 'pending' && (
+                <Link
+                  href="/dashboard/lister/verify-identity"
+                  className="shrink-0 h-10 px-4 rounded-xl bg-primary text-white text-sm font-semibold inline-flex items-center justify-center"
+                >
+                  {identityStatus === 'rejected' ? 'Resubmit ID' : 'Verify identity'}
+                </Link>
+              )}
+              {identityStatus === 'pending' && (
+                <Link
+                  href="/dashboard/lister/verify-identity"
+                  className="shrink-0 text-sm font-medium text-primary hover:underline"
+                >
+                  View status
+                </Link>
+              )}
+            </div>
+          )}
+
           <div className="grid lg:grid-cols-[1.1fr_2fr] gap-5 mb-10">
             <div className="rounded-2xl bg-hero-band text-white p-6 md:p-7 relative overflow-hidden">
               <div className="relative z-10">
@@ -262,12 +308,30 @@ export default function ListerDashboardPage() {
                 {depositSuccessBanner && (
                   <p className="text-sm text-white/90 mt-2">Deposit received. Your balance has been updated.</p>
                 )}
-                <button
-                  onClick={() => setShowDeposit(true)}
-                  className="mt-5 h-11 px-6 rounded-[14px] bg-white text-brand-deep font-semibold hover:bg-canvas transition-colors w-full sm:w-auto"
-                >
-                  Deposit funds
-                </button>
+                {refundSuccessBanner && (
+                  <p className="text-sm text-white/90 mt-2">Refund sent to your card. Balance updated.</p>
+                )}
+                <div className="mt-5 flex flex-col sm:flex-row gap-3">
+                  <button
+                    onClick={() => {
+                      if (!identityVerified) {
+                        window.location.href = '/dashboard/lister/verify-identity'
+                        return
+                      }
+                      setShowDeposit(true)
+                    }}
+                    className="h-11 px-6 rounded-[14px] bg-white text-brand-deep font-semibold hover:bg-canvas transition-colors w-full sm:w-auto"
+                  >
+                    {identityVerified ? 'Deposit funds' : 'Verify to deposit'}
+                  </button>
+                  <button
+                    onClick={() => setShowRefund(true)}
+                    disabled={!hasKnownBalance || (profile?.balance_cents ?? 0) < 100}
+                    className="h-11 px-6 rounded-[14px] border border-white/40 text-white font-semibold hover:bg-white/10 transition-colors w-full sm:w-auto disabled:opacity-50"
+                  >
+                    Refund to card
+                  </button>
+                </div>
               </div>
               <span className="absolute w-48 h-48 rounded-full bg-primary/35 blur-3xl -right-10 -bottom-16 pointer-events-none" aria-hidden />
             </div>
@@ -308,7 +372,12 @@ export default function ListerDashboardPage() {
               {activeListings.length === 0 ? (
                 <p className="text-ink-2 text-sm py-6 text-center">
                   No active jobs yet.{' '}
-                  <Link href="/dashboard/lister/post-job" className="text-brand font-semibold hover:text-primary">Post a job</Link>
+                  <Link
+                    href={identityVerified ? '/dashboard/lister/post-job' : '/dashboard/lister/verify-identity'}
+                    className="text-brand font-semibold hover:text-primary"
+                  >
+                    {identityVerified ? 'Post a job' : 'Verify identity to post'}
+                  </Link>
                 </p>
               ) : (
                 <div className="flex flex-col gap-3">
@@ -350,8 +419,11 @@ export default function ListerDashboardPage() {
                     <p className="text-[13px] text-ink-2 mt-0.5">Post a fresh job in a few taps.</p>
                   </div>
                 </div>
-                <Link href="/dashboard/lister/post-job" className="swifto-btn-primary w-full mt-4 h-10 text-sm">
-                  Post a job
+                <Link
+                  href={identityVerified ? '/dashboard/lister/post-job' : '/dashboard/lister/verify-identity'}
+                  className="swifto-btn-primary w-full mt-4 h-10 text-sm"
+                >
+                  {identityVerified ? 'Post a job' : 'Verify identity'}
                 </Link>
               </div>
 
@@ -424,6 +496,23 @@ export default function ListerDashboardPage() {
           onClose={() => setShowDeposit(false)}
           onSuccess={() => {
             setProfile((p) => p ? { ...p } : null)
+          }}
+        />
+      )}
+      {showRefund && (
+        <RefundModal
+          balanceCents={profile?.balance_cents ?? 0}
+          onClose={() => setShowRefund(false)}
+          onSuccess={async () => {
+            setRefundSuccessBanner(true)
+            if (!user) return
+            const supabase = createClient()
+            const { data } = await supabase
+              .from('profiles')
+              .select('first_name, last_name, balance_cents, avatar_url, identity_status')
+              .eq('id', user.id)
+              .single()
+            if (data) setProfile(data)
           }}
         />
       )}
