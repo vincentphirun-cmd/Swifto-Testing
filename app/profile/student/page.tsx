@@ -12,6 +12,7 @@ import { ProfileIdentityNote, ProfileReadOnlyField } from '@/components/profile-
 import { ProfileEditableSection } from '@/components/profile-editable-section'
 import { StarRatingDisplay } from '@/components/star-rating'
 import { ProfileAvatarUpload } from '@/components/profile-avatar'
+import { DesignBadge } from '@/components/design/design-badge'
 import { ProfileJobHistoryList } from '@/components/profile-job-history'
 import {
   fetchStudentProfileCompletions,
@@ -252,7 +253,7 @@ export default function StudentProfilePage() {
               <div className="bg-white rounded-2xl border border-ink/15 shadow-sm p-8 md:p-10 space-y-8">
               
                 {/* Profile Picture */}
-                <div className="flex justify-center">
+                <div className="flex flex-col items-center gap-3">
                   {user ? (
                     <ProfileAvatarUpload
                       userId={user.id}
@@ -260,6 +261,15 @@ export default function StudentProfilePage() {
                       onUploaded={(url) => setProfile((prev) => (prev ? { ...prev, avatar_url: url } : prev))}
                     />
                   ) : null}
+                  {(profile?.university || accountIdentity.university)?.toString().trim() && (
+                    <DesignBadge tone="success" className="inline-flex items-center gap-1">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Verified –{' '}
+                      {(profile?.university || accountIdentity.university)?.toString().trim()}
+                    </DesignBadge>
+                  )}
                 </div>
 
                 {/* Account details (fixed at signup) */}

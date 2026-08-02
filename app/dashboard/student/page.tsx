@@ -48,6 +48,7 @@ type Profile = {
   last_name: string
   balance_cents?: number
   avatar_url?: string | null
+  university?: string | null
 }
 
 export default function StudentDashboardPage() {
@@ -89,7 +90,7 @@ export default function StudentDashboardPage() {
       const supabase = createClient()
       const { data } = await supabase
         .from('profiles')
-        .select('first_name, last_name, balance_cents, avatar_url')
+        .select('first_name, last_name, balance_cents, avatar_url, university')
         .eq('id', user.id)
         .single()
       if (data) {
@@ -99,6 +100,7 @@ export default function StudentDashboardPage() {
           first_name: user.user_metadata.first_name ?? '',
           last_name: user.user_metadata.last_name ?? '',
           balance_cents: 0,
+          university: user.user_metadata.university ?? null,
         })
       }
     }
@@ -224,6 +226,8 @@ export default function StudentDashboardPage() {
   }, [user])
 
   const balance = ((profile?.balance_cents ?? 0) / 100).toFixed(2)
+  const universityName = (profile?.university ?? user?.user_metadata?.university)?.toString().trim() || ''
+  const universityVerified = !!universityName
 
   return (
     <>
@@ -240,7 +244,17 @@ export default function StudentDashboardPage() {
             </div>
             <div>
               <p className="text-sm text-ink-3">Welcome back,</p>
-              <h1 className="text-[28px]">{displayName || 'User'}</h1>
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="text-[28px]">{displayName || 'User'}</h1>
+                {universityVerified && (
+                  <DesignBadge tone="success" className="inline-flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Verified – {universityName}
+                  </DesignBadge>
+                )}
+              </div>
             </div>
           </div>
 
@@ -305,7 +319,7 @@ export default function StudentDashboardPage() {
               onClose={() => setShowWithdraw(false)}
               onSuccess={async () => {
                 const supabase = createClient()
-                const { data } = await supabase.from('profiles').select('first_name, last_name, balance_cents, avatar_url').eq('id', user.id).single()
+                const { data } = await supabase.from('profiles').select('first_name, last_name, balance_cents, avatar_url, university').eq('id', user.id).single()
                 if (data) setProfile(data)
               }}
             />
