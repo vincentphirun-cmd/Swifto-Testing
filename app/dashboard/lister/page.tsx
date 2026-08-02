@@ -252,7 +252,17 @@ export default function ListerDashboardPage() {
             <ProfileAvatar avatarUrl={profile?.avatar_url} sizeClassName="w-14 h-14 shrink-0" iconClassName="w-7 h-7 text-primary" />
             <div>
               <p className="text-sm text-ink-muted">Welcome back,</p>
-              <h1 className="text-2xl md:text-3xl font-bold text-ink">{displayName || 'User'}</h1>
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="text-2xl md:text-3xl font-bold text-ink">{displayName || 'User'}</h1>
+                {identityVerified && (
+                  <DesignBadge tone="success" className="inline-flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                    ID verified
+                  </DesignBadge>
+                )}
+              </div>
             </div>
           </div>
 

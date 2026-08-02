@@ -12,6 +12,7 @@ import { ProfileEditableSection } from '@/components/profile-editable-section'
 import { StarRatingDisplay } from '@/components/star-rating'
 import { ProfileAvatarUpload } from '@/components/profile-avatar'
 import { ProfileJobHistoryList } from '@/components/profile-job-history'
+import { DesignBadge } from '@/components/design/design-badge'
 import {
   fetchListerProfileCompletions,
   type ProfileCompletionJob,
@@ -24,6 +25,7 @@ type Profile = {
   last_name: string
   avatar_url?: string | null
   role?: 'lister' | 'student'
+  identity_status?: string | null
   location?: string | null
   bio?: string | null
   interests?: string | null
@@ -83,7 +85,7 @@ export default function ListerProfilePage() {
       const supabase = createClient()
       const { data } = await supabase
         .from('profiles')
-        .select('first_name, last_name, avatar_url, role, location, bio, interests, preferred_job_categories')
+        .select('first_name, last_name, avatar_url, role, identity_status, location, bio, interests, preferred_job_categories')
         .eq('id', user.id)
         .single()
       if (data) {
@@ -179,7 +181,7 @@ export default function ListerProfilePage() {
               <div className="bg-white rounded-2xl border border-ink/15 shadow-sm p-8 md:p-10 space-y-8">
               
                 {/* Profile Picture */}
-                <div className="flex justify-center">
+                <div className="flex flex-col items-center gap-3">
                   {user ? (
                     <ProfileAvatarUpload
                       userId={user.id}
@@ -187,6 +189,14 @@ export default function ListerProfilePage() {
                       onUploaded={(url) => setProfile((prev) => (prev ? { ...prev, avatar_url: url } : prev))}
                     />
                   ) : null}
+                  {profile?.identity_status === 'verified' && (
+                    <DesignBadge tone="success" className="inline-flex items-center gap-1">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                      </svg>
+                      ID verified
+                    </DesignBadge>
+                  )}
                 </div>
 
                 {/* Account details (fixed at signup) */}
