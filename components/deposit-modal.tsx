@@ -87,6 +87,13 @@ export function DepositModal({ onClose, onSuccess }: Props) {
           {error && (
             <p className="text-sm text-red-600">{error}</p>
           )}
+          <p className="text-xs text-ink/60 leading-relaxed">
+            By continuing to payment, you agree to our{' '}
+            <a href="/payment-terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
+              Payment Terms
+            </a>
+            .
+          </p>
           <div className="flex gap-3 pt-2">
             <button
               type="button"

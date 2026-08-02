@@ -21,6 +21,7 @@ export default function SignUpPage() {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [agreedToLegal, setAgreedToLegal] = useState(false)
 
   // Redirect if already logged in — get role from profiles table (canonical source)
   useEffect(() => {
@@ -83,6 +84,12 @@ export default function SignUpPage() {
 
     if (!formData.name.trim()) {
       setError('Please enter your full name.')
+      setLoading(false)
+      return
+    }
+
+    if (!agreedToLegal) {
+      setError('Please agree to the Terms of Service, Privacy Policy, and Payment Terms to continue.')
       setLoading(false)
       return
     }
@@ -383,9 +390,34 @@ export default function SignUpPage() {
                   />
                 </div>
 
+                <label className="flex items-start gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={agreedToLegal}
+                    onChange={(e) => setAgreedToLegal(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-ink/30 text-primary focus:ring-primary"
+                    required
+                  />
+                  <span className="text-xs text-ink/70 leading-relaxed">
+                    I agree to the{' '}
+                    <Link href="/terms" target="_blank" className="text-accent hover:underline font-medium">
+                      Terms of Service
+                    </Link>
+                    ,{' '}
+                    <Link href="/privacy" target="_blank" className="text-accent hover:underline font-medium">
+                      Privacy Policy
+                    </Link>
+                    , and{' '}
+                    <Link href="/payment-terms" target="_blank" className="text-accent hover:underline font-medium">
+                      Payment Terms
+                    </Link>
+                    . This applies whether I sign up as a student or a lister.
+                  </span>
+                </label>
+
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !agreedToLegal}
                   className="w-full h-12 rounded-xl bg-primary text-white font-medium hover:bg-secondary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Creating account...' : 'Create account'}
@@ -397,16 +429,6 @@ export default function SignUpPage() {
                   Already have an account?{' '}
                   <Link href="/login" className="text-primary hover:text-accent font-medium transition-colors">
                     Log in
-                  </Link>
-                </p>
-                <p className="text-xs text-ink/60">
-                  By signing up, you agree to our{' '}
-                  <Link href="/terms" className="text-accent hover:underline">
-                    Terms and Conditions
-                  </Link>
-                  {' '}and{' '}
-                  <Link href="/privacy" className="text-accent hover:underline">
-                    Privacy Policy
                   </Link>
                 </p>
               </div>

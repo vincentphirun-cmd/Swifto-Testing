@@ -208,6 +208,13 @@ export function WithdrawModal({ balanceCents, onClose, onSuccess }: Props) {
             />
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
+          <p className="text-xs text-ink/60 leading-relaxed">
+            By continuing, you agree to our{' '}
+            <a href="/payment-terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
+              Payment Terms
+            </a>
+            .
+          </p>
           <div className="flex gap-3 pt-2">
             <button
               type="button"
