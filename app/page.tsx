@@ -257,8 +257,9 @@ export default function Home() {
               <Link href="/mission" className="hover:text-brand">Mission</Link>
               <Link href="/contact" className="hover:text-brand">Contact</Link>
               <Link href="/terms" className="hover:text-brand">Terms</Link>
+              <Link href="/community-guidelines" className="hover:text-brand">Community Guidelines</Link>
               <Link href="/privacy" className="hover:text-brand">Privacy</Link>
-              <Link href="/payment-terms" className="hover:text-brand">Payment Terms</Link>
+              <Link href="/payment-terms" className="hover:text-brand">Payment &amp; Payout Terms</Link>
             </div>
             <p className="text-[13.5px] text-ink-3">© Swifto · Auckland, NZ</p>
           </div>

@@ -17,6 +17,7 @@ import { fetchStudentGstRegistered } from '@/lib/profile-completions'
 export default function BrowseJobsPage() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
+  const [userRole, setUserRole] = useState<'lister' | 'student' | 'admin' | null>(null)
   const [gstRegistered, setGstRegistered] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [appliedJobs, setAppliedJobs] = useState<Set<string>>(new Set())
@@ -123,6 +124,29 @@ export default function BrowseJobsPage() {
   useEffect(() => {
     fetchJobs()
   }, [fetchJobs])
+
+  useEffect(() => {
+    async function fetchRole() {
+      if (!user) {
+        setUserRole(null)
+        return
+      }
+      const supabase = createClient()
+      const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+      if (data?.role === 'admin' || data?.role === 'lister' || data?.role === 'student') {
+        setUserRole(data.role)
+      } else if (
+        user.user_metadata?.role === 'admin' ||
+        user.user_metadata?.role === 'lister' ||
+        user.user_metadata?.role === 'student'
+      ) {
+        setUserRole(user.user_metadata.role)
+      } else {
+        setUserRole(null)
+      }
+    }
+    void fetchRole()
+  }, [user])
 
   // Fetch student's applications and GST status when logged in
   useEffect(() => {
@@ -264,6 +288,7 @@ export default function BrowseJobsPage() {
   }
 
   const isFormValid = formData.name.trim() !== '' && formData.experience.trim() !== '' && formData.availability.trim() !== ''
+  const canApplyToJobs = userRole !== 'lister'
 
   const totalPages = Math.max(1, Math.ceil(filteredJobs.length / jobsPerPage))
   const indexOfLastJob = currentPage * jobsPerPage
@@ -470,33 +495,34 @@ export default function BrowseJobsPage() {
                       </div>
                     </div>
                     <FeeBreakdown price={job.priceAmount} gstRegistered={gstRegistered} showStripeEstimate={false} showPayoutNote className="mt-2" />
-                    {/* Action buttons */}
-                    <div className="flex flex-wrap gap-3 pt-2 border-t border-ink/10 justify-end">
-                      {appliedJobs.has(job.id) ? (
-                        <button 
-                          disabled
-                          className="h-10 px-6 rounded-xl font-medium bg-green-100 text-green-700 border-2 border-green-300 cursor-default flex items-center justify-center"
-                        >
-                          Applied
-                        </button>
-                      ) : (
-                        <>
-                          <button 
-                            onClick={() => handleQuickApply(job.id)}
-                            disabled={applying}
-                            className="h-10 px-6 rounded-xl bg-primary text-white font-medium hover:bg-secondary transition-colors flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
+                    {canApplyToJobs && (
+                      <div className="flex flex-wrap gap-3 pt-2 border-t border-ink/10 justify-end">
+                        {appliedJobs.has(job.id) ? (
+                          <button
+                            disabled
+                            className="h-10 px-6 rounded-xl font-medium bg-green-100 text-green-700 border-2 border-green-300 cursor-default flex items-center justify-center"
                           >
-                            {applying ? 'Applying…' : 'Quick Apply'}
+                            Applied
                           </button>
-                          <button 
-                            onClick={() => handleApplyClick(job.id)}
-                            className="h-10 px-6 rounded-xl border border-ink/20 text-ink font-medium hover:border-primary hover:text-primary transition-colors flex items-center justify-center"
-                          >
-                            Apply
-                          </button>
-                        </>
-                      )}
-                    </div>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleQuickApply(job.id)}
+                              disabled={applying}
+                              className="h-10 px-6 rounded-xl bg-primary text-white font-medium hover:bg-secondary transition-colors flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
+                            >
+                              {applying ? 'Applying…' : 'Quick Apply'}
+                            </button>
+                            <button
+                              onClick={() => handleApplyClick(job.id)}
+                              className="h-10 px-6 rounded-xl border border-ink/20 text-ink font-medium hover:border-primary hover:text-primary transition-colors flex items-center justify-center"
+                            >
+                              Apply
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -535,7 +561,7 @@ export default function BrowseJobsPage() {
       </main>
 
       {/* Application Modal */}
-      {selectedJob && selectedJobData && (
+      {canApplyToJobs && selectedJob && selectedJobData && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           {/* Backdrop */}
           <div 

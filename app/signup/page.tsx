@@ -21,7 +21,9 @@ export default function SignUpPage() {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [agreedToLegal, setAgreedToLegal] = useState(false)
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
+  const [agreedToCommunityGuidelines, setAgreedToCommunityGuidelines] = useState(false)
+  const [acknowledgedPrivacy, setAcknowledgedPrivacy] = useState(false)
 
   // Redirect if already logged in — get role from profiles table (canonical source)
   useEffect(() => {
@@ -88,8 +90,20 @@ export default function SignUpPage() {
       return
     }
 
-    if (!agreedToLegal) {
-      setError('Please agree to the Terms of Service, Privacy Policy, and Payment Terms to continue.')
+    if (!agreedToTerms) {
+      setError('Please agree to the Terms of Service to continue.')
+      setLoading(false)
+      return
+    }
+
+    if (!agreedToCommunityGuidelines) {
+      setError('Please agree to the Community Guidelines to continue.')
+      setLoading(false)
+      return
+    }
+
+    if (!acknowledgedPrivacy) {
+      setError('Please acknowledge the Privacy Statement to continue.')
       setLoading(false)
       return
     }
@@ -102,6 +116,8 @@ export default function SignUpPage() {
       const firstName = nameParts[0] || ''
       const lastName = nameParts.slice(1).join(' ') || ''
 
+      const acceptedAt = new Date().toISOString()
+
       // Sign up with Supabase Auth - store profile data in user metadata
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
@@ -113,6 +129,9 @@ export default function SignUpPage() {
             first_name: firstName,
             last_name: lastName,
             university: userType === 'student' ? formData.university : null,
+            accepted_terms_of_service_at: acceptedAt,
+            accepted_community_guidelines_at: acceptedAt,
+            acknowledged_privacy_statement_at: acceptedAt,
           },
         },
       })
@@ -144,6 +163,9 @@ export default function SignUpPage() {
                 last_name: nameParts.slice(1).join(' ') || '',
                 role: userType,
                 university: userType === 'student' ? formData.university : null,
+                accepted_terms_of_service_at: acceptedAt,
+                accepted_community_guidelines_at: acceptedAt,
+                acknowledged_privacy_statement_at: acceptedAt,
               }),
             })
             if (res.ok) {
@@ -190,6 +212,9 @@ export default function SignUpPage() {
             last_name: lastName,
             role: userType,
             university: userType === 'student' ? formData.university : null,
+            accepted_terms_of_service_at: acceptedAt,
+            accepted_community_guidelines_at: acceptedAt,
+            acknowledged_privacy_statement_at: acceptedAt,
           }),
         })
 
@@ -390,34 +415,80 @@ export default function SignUpPage() {
                   />
                 </div>
 
-                <label className="flex items-start gap-3 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={agreedToLegal}
-                    onChange={(e) => setAgreedToLegal(e.target.checked)}
-                    className="mt-1 h-4 w-4 rounded border-ink/30 text-primary focus:ring-primary"
-                    required
-                  />
-                  <span className="text-xs text-ink/70 leading-relaxed">
-                    I agree to the{' '}
-                    <Link href="/terms" target="_blank" className="text-accent hover:underline font-medium">
-                      Terms of Service
-                    </Link>
-                    ,{' '}
-                    <Link href="/privacy" target="_blank" className="text-accent hover:underline font-medium">
-                      Privacy Policy
-                    </Link>
-                    , and{' '}
+                <div className="space-y-4">
+                  <label className="flex items-start gap-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={agreedToTerms}
+                      onChange={(e) => setAgreedToTerms(e.target.checked)}
+                      className="mt-1 h-4 w-4 rounded border-ink/30 text-primary focus:ring-primary"
+                      required
+                    />
+                    <span className="text-xs text-ink/70 leading-relaxed">
+                      I agree to the{' '}
+                      <Link href="/terms" target="_blank" className="text-accent hover:underline font-medium">
+                        Terms of Service
+                      </Link>
+                      .
+                    </span>
+                  </label>
+
+                  <label className="flex items-start gap-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={agreedToCommunityGuidelines}
+                      onChange={(e) => setAgreedToCommunityGuidelines(e.target.checked)}
+                      className="mt-1 h-4 w-4 rounded border-ink/30 text-primary focus:ring-primary"
+                      required
+                    />
+                    <span className="text-xs text-ink/70 leading-relaxed">
+                      I agree to the{' '}
+                      <Link
+                        href="/community-guidelines"
+                        target="_blank"
+                        className="text-accent hover:underline font-medium"
+                      >
+                        Community Guidelines
+                      </Link>
+                      .
+                    </span>
+                  </label>
+
+                  <label className="flex items-start gap-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={acknowledgedPrivacy}
+                      onChange={(e) => setAcknowledgedPrivacy(e.target.checked)}
+                      className="mt-1 h-4 w-4 rounded border-ink/30 text-primary focus:ring-primary"
+                      required
+                    />
+                    <span className="text-xs text-ink/70 leading-relaxed">
+                      I acknowledge the{' '}
+                      <Link href="/privacy" target="_blank" className="text-accent hover:underline font-medium">
+                        Privacy Statement
+                      </Link>
+                      .
+                    </span>
+                  </label>
+
+                  <p className="text-xs text-ink/60 leading-relaxed">
+                    Payment &amp; Payout Terms are linked here and accepted separately when you first pay or
+                    earn.{' '}
                     <Link href="/payment-terms" target="_blank" className="text-accent hover:underline font-medium">
-                      Payment Terms
+                      Review Payment &amp; Payout Terms
                     </Link>
-                    . This applies whether I sign up as a student or a lister.
-                  </span>
-                </label>
+                    .
+                  </p>
+                </div>
 
                 <button
                   type="submit"
-                  disabled={loading || !agreedToLegal}
+                  disabled={
+                    loading ||
+                    !agreedToTerms ||
+                    !agreedToCommunityGuidelines ||
+                    !acknowledgedPrivacy
+                  }
                   className="w-full h-12 rounded-xl bg-primary text-white font-medium hover:bg-secondary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Creating account...' : 'Create account'}

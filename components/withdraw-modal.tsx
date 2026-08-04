@@ -35,6 +35,9 @@ export function WithdrawModal({ balanceCents, onClose, onSuccess }: Props) {
   const [statusLoading, setStatusLoading] = useState(true)
   const [connect, setConnect] = useState<ConnectStatus | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [acceptedPayoutTermsAt, setAcceptedPayoutTermsAt] = useState<string | null>(null)
+  const [agreeToPayoutTerms, setAgreeToPayoutTerms] = useState(false)
+  const isMissingLegalColumn = (code: string | undefined) => code === 'PGRST204'
 
   const maxAmount = balanceCents / 100
   const payoutsReady = !!connect?.payouts_enabled
@@ -62,6 +65,35 @@ export function WithdrawModal({ balanceCents, onClose, onSuccess }: Props) {
             details_submitted: !!data.details_submitted,
             payouts_enabled: !!data.payouts_enabled,
           })
+        }
+
+        if (!cancelled) {
+          const supabase = createClient()
+          const {
+            data: { user },
+          } = await supabase.auth.getUser()
+
+          if (user) {
+            const { data: profile, error: profileError } = await supabase
+              .from('profiles')
+              .select('accepted_payout_terms_at')
+              .eq('id', user.id)
+              .single()
+
+            if (profileError && !isMissingLegalColumn(profileError.code)) {
+              throw profileError
+            }
+
+            const acceptedAt =
+              profileError && isMissingLegalColumn(profileError.code)
+                ? null
+                : profile?.accepted_payout_terms_at ?? null
+            setAcceptedPayoutTermsAt(acceptedAt)
+            setAgreeToPayoutTerms(!!acceptedAt)
+          } else {
+            setAcceptedPayoutTermsAt(null)
+            setAgreeToPayoutTerms(false)
+          }
         }
       } catch {
         if (!cancelled) setError('Could not load bank account status')
@@ -131,6 +163,14 @@ export function WithdrawModal({ balanceCents, onClose, onSuccess }: Props) {
       setError('Connect your bank account before withdrawing')
       return
     }
+
+    if (!acceptedPayoutTermsAt) {
+      if (!agreeToPayoutTerms) {
+        setError('Please agree to Payment & Payout Terms to withdraw.')
+        return
+      }
+    }
+
     setLoading(true)
     try {
       const headers = await authHeaders()
@@ -139,6 +179,34 @@ export function WithdrawModal({ balanceCents, onClose, onSuccess }: Props) {
         setLoading(false)
         return
       }
+
+      if (!acceptedPayoutTermsAt) {
+        const supabase = createClient()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+
+        if (!user) {
+          setError('Please log in again')
+          setLoading(false)
+          return
+        }
+
+        const acceptedAt = new Date().toISOString()
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ accepted_payout_terms_at: acceptedAt })
+          .eq('id', user.id)
+
+        if (updateError && !isMissingLegalColumn(updateError.code)) {
+          setError('Could not record Payment & Payout Terms acceptance. Please try again.')
+          setLoading(false)
+          return
+        }
+
+        setAcceptedPayoutTermsAt(acceptedAt)
+      }
+
       const res = await fetch('/api/stripe/request-withdrawal', {
         method: 'POST',
         headers,
@@ -210,11 +278,40 @@ export function WithdrawModal({ balanceCents, onClose, onSuccess }: Props) {
           {error && <p className="text-sm text-red-600">{error}</p>}
           <p className="text-xs text-ink/60 leading-relaxed">
             By continuing, you agree to our{' '}
-            <a href="/payment-terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
-              Payment Terms
+            <a
+              href="/payment-terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline font-medium"
+            >
+              Payment &amp; Payout Terms
             </a>
             .
           </p>
+
+          {!statusLoading && !acceptedPayoutTermsAt && (
+            <label className="flex items-start gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={agreeToPayoutTerms}
+                onChange={(e) => setAgreeToPayoutTerms(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-ink/30 text-primary focus:ring-primary"
+                required
+              />
+              <span className="text-xs text-ink/70 leading-relaxed">
+                I agree to the{' '}
+                <a
+                  href="/payment-terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent hover:underline font-medium"
+                >
+                  Payment &amp; Payout Terms
+                </a>
+                .
+              </span>
+            </label>
+          )}
           <div className="flex gap-3 pt-2">
             <button
               type="button"
@@ -225,7 +322,13 @@ export function WithdrawModal({ balanceCents, onClose, onSuccess }: Props) {
             </button>
             <button
               type="submit"
-              disabled={loading || !payoutsReady || maxAmount < 1}
+              disabled={
+                loading ||
+                statusLoading ||
+                !payoutsReady ||
+                maxAmount < 1 ||
+                (!acceptedPayoutTermsAt && !agreeToPayoutTerms)
+              }
               className="flex-1 py-3 rounded-xl bg-primary text-white font-medium hover:bg-secondary disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {loading ? 'Processing…' : 'Withdraw'}

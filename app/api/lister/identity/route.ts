@@ -6,6 +6,60 @@ import {
   type ListerIdentityDocType,
 } from '@/lib/lister-identity'
 
+async function getOrCreateListerProfile(admin: ReturnType<typeof createAdminClient>, user: any) {
+  let { data: profile } = await admin
+    .from('profiles')
+    .select('role, identity_status')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const metadataRole = user.user_metadata?.role
+  const isListerByMetadata = metadataRole === 'lister'
+
+  if (!profile && isListerByMetadata) {
+    const baseInsert = {
+      id: user.id,
+      role: 'lister',
+      first_name: user.user_metadata?.first_name ?? user.email?.split('@')[0] ?? 'User',
+      last_name: user.user_metadata?.last_name ?? '',
+      university: user.user_metadata?.university ?? null,
+      identity_status: 'unverified',
+    }
+
+    let { error: insertError } = await admin.from('profiles').insert({
+      ...baseInsert,
+      accepted_terms_of_service_at: user.user_metadata?.accepted_terms_of_service_at ?? null,
+      accepted_community_guidelines_at:
+        user.user_metadata?.accepted_community_guidelines_at ?? null,
+      acknowledged_privacy_statement_at:
+        user.user_metadata?.acknowledged_privacy_statement_at ?? null,
+    })
+
+    if (insertError?.code === 'PGRST204') {
+      const fallback = await admin.from('profiles').insert(baseInsert)
+      insertError = fallback.error
+    }
+
+    if (insertError && insertError.code !== '23505') {
+      throw insertError
+    }
+
+    const { data: insertedProfile } = await admin
+      .from('profiles')
+      .select('role, identity_status')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    profile = insertedProfile
+  }
+
+  if (!profile && isListerByMetadata) {
+    return { role: 'lister', identity_status: 'unverified' as const }
+  }
+
+  return profile
+}
+
 /**
  * POST /api/lister/identity/submit
  * Body: legal_full_name, date_of_birth, document_type, document_number?, address_line?, document_paths[]
@@ -46,11 +100,7 @@ export async function POST(req: NextRequest) {
     }
 
     const admin = createAdminClient()
-    const { data: profile } = await admin
-      .from('profiles')
-      .select('role, identity_status')
-      .eq('id', user.id)
-      .single()
+    const profile = await getOrCreateListerProfile(admin, user)
 
     if (!profile || profile.role !== 'lister') {
       return NextResponse.json({ error: 'Only listers can submit identity verification' }, { status: 403 })
@@ -107,11 +157,7 @@ export async function GET(req: NextRequest) {
     const { user } = auth
 
     const admin = createAdminClient()
-    const { data: profile } = await admin
-      .from('profiles')
-      .select('role, identity_status')
-      .eq('id', user.id)
-      .single()
+    const profile = await getOrCreateListerProfile(admin, user)
 
     if (!profile || profile.role !== 'lister') {
       return NextResponse.json({ error: 'Not a lister' }, { status: 403 })

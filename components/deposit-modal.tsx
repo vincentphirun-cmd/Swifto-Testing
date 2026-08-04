@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 type Props = {
@@ -12,6 +12,52 @@ export function DepositModal({ onClose, onSuccess }: Props) {
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [legalStatusLoading, setLegalStatusLoading] = useState(true)
+  const [acceptedPaymentTermsAt, setAcceptedPaymentTermsAt] = useState<string | null>(null)
+  const [agreeToPaymentTerms, setAgreeToPaymentTerms] = useState(false)
+
+  const isMissingLegalColumn = (code: string | undefined) => code === 'PGRST204'
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadLegalStatus() {
+      setLegalStatusLoading(true)
+      try {
+        const supabase = createClient()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+
+        if (!user) return
+
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('accepted_payment_terms_at')
+          .eq('id', user.id)
+          .single()
+
+        if (error && !isMissingLegalColumn(error.code)) {
+          throw error
+        }
+
+        if (cancelled) return
+        const acceptedAt = error && isMissingLegalColumn(error.code)
+          ? null
+          : data?.accepted_payment_terms_at ?? null
+        setAcceptedPaymentTermsAt(acceptedAt)
+        setAgreeToPaymentTerms(!!acceptedAt)
+      } catch {
+        if (!cancelled) setAcceptedPaymentTermsAt(null)
+      } finally {
+        if (!cancelled) setLegalStatusLoading(false)
+      }
+    }
+
+    loadLegalStatus()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -31,12 +77,44 @@ export function DepositModal({ onClose, onSuccess }: Props) {
     setLoading(true)
     try {
       const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.access_token) {
         setError('Please log in again')
         setLoading(false)
         return
       }
+
+      if (!acceptedPaymentTermsAt) {
+        if (!agreeToPaymentTerms) {
+          setError('Please agree to Payment & Payout Terms to continue.')
+          setLoading(false)
+          return
+        }
+
+        if (!user) {
+          setError('Please log in again')
+          setLoading(false)
+          return
+        }
+
+        const acceptedAt = new Date().toISOString()
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ accepted_payment_terms_at: acceptedAt })
+          .eq('id', user.id)
+
+        if (updateError && !isMissingLegalColumn(updateError.code)) {
+          setError('Could not record Payment & Payout Terms acceptance. Please try again.')
+          setLoading(false)
+          return
+        }
+
+        setAcceptedPaymentTermsAt(acceptedAt)
+      }
+
       const res = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: {
@@ -89,11 +167,40 @@ export function DepositModal({ onClose, onSuccess }: Props) {
           )}
           <p className="text-xs text-ink/60 leading-relaxed">
             By continuing to payment, you agree to our{' '}
-            <a href="/payment-terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
-              Payment Terms
+            <a
+              href="/payment-terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline font-medium"
+            >
+              Payment &amp; Payout Terms
             </a>
             .
           </p>
+
+          {!legalStatusLoading && !acceptedPaymentTermsAt && (
+            <label className="flex items-start gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={agreeToPaymentTerms}
+                onChange={(e) => setAgreeToPaymentTerms(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-ink/30 text-primary focus:ring-primary"
+                required
+              />
+              <span className="text-xs text-ink/70 leading-relaxed">
+                I agree to the{' '}
+                <a
+                  href="/payment-terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent hover:underline font-medium"
+                >
+                  Payment &amp; Payout Terms
+                </a>
+                .
+              </span>
+            </label>
+          )}
           <div className="flex gap-3 pt-2">
             <button
               type="button"
@@ -104,7 +211,7 @@ export function DepositModal({ onClose, onSuccess }: Props) {
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || legalStatusLoading || (!acceptedPaymentTermsAt && !agreeToPaymentTerms)}
               className="flex-1 py-3 rounded-xl bg-primary text-white font-medium hover:bg-secondary disabled:opacity-70"
             >
               {loading ? 'Loading…' : 'Continue to payment'}

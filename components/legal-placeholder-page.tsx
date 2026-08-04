@@ -55,12 +55,16 @@ export function LegalPlaceholderPage({ title, subtitle }: Props) {
                 Terms of Service
               </Link>
               {' · '}
+              <Link href="/community-guidelines" className="text-primary hover:underline">
+                Community Guidelines
+              </Link>
+              {' · '}
               <Link href="/privacy" className="text-primary hover:underline">
-                Privacy Policy
+                Privacy Statement
               </Link>
               {' · '}
               <Link href="/payment-terms" className="text-primary hover:underline">
-                Payment Terms
+                Payment &amp; Payout Terms
               </Link>
             </p>
           </div>

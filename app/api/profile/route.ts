@@ -16,14 +16,30 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Missing Authorization header' }, { status: 401 })
   }
 
-  let body: { first_name: string; last_name: string; role: 'lister' | 'student'; university?: string | null }
+  let body: {
+    first_name: string
+    last_name: string
+    role: 'lister' | 'student'
+    university?: string | null
+    accepted_terms_of_service_at?: string | null
+    accepted_community_guidelines_at?: string | null
+    acknowledged_privacy_statement_at?: string | null
+  }
   try {
     body = await request.json()
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const { first_name, last_name, role, university } = body
+  const {
+    first_name,
+    last_name,
+    role,
+    university,
+    accepted_terms_of_service_at,
+    accepted_community_guidelines_at,
+    acknowledged_privacy_statement_at,
+  } = body
   if (!first_name || !last_name || !role || !['lister', 'student'].includes(role)) {
     return NextResponse.json(
       { error: 'Missing or invalid first_name, last_name, or role' },
@@ -45,14 +61,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 })
   }
 
-  const { error: insertError } = await admin.from('profiles').insert({
+  const baseInsert = {
     id: user.id,
     role,
     first_name,
     last_name,
     university: university ?? null,
     identity_status: 'unverified',
+  }
+
+  let { error: insertError } = await admin.from('profiles').insert({
+    ...baseInsert,
+    accepted_terms_of_service_at: accepted_terms_of_service_at ?? null,
+    accepted_community_guidelines_at: accepted_community_guidelines_at ?? null,
+    acknowledged_privacy_statement_at: acknowledged_privacy_statement_at ?? null,
   })
+
+  if (insertError?.code === 'PGRST204') {
+    const fallback = await admin.from('profiles').insert(baseInsert)
+    insertError = fallback.error
+  }
 
   if (insertError) {
     if (insertError.code === '23505') {

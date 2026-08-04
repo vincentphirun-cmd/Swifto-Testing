@@ -136,14 +136,31 @@ export async function GET(request: Request) {
     const { data: profile } = await admin.from('profiles').select('role').eq('id', userId).single()
 
     if (!profile) {
-      const { error: insertError } = await admin.from('profiles').insert({
+      const acceptedTermsOfServiceAt = userMetadata.accepted_terms_of_service_at ?? null
+      const acceptedCommunityGuidelinesAt = userMetadata.accepted_community_guidelines_at ?? null
+      const acknowledgedPrivacyStatementAt =
+        userMetadata.acknowledged_privacy_statement_at ?? null
+
+      const baseInsert = {
         id: userId,
         role: userMetadata.role || 'student',
         first_name: userMetadata.first_name ?? userEmail?.split('@')[0] ?? 'User',
         last_name: userMetadata.last_name ?? '',
         university: userMetadata.university ?? null,
         identity_status: 'unverified',
+      }
+
+      let { error: insertError } = await admin.from('profiles').insert({
+        ...baseInsert,
+        accepted_terms_of_service_at: acceptedTermsOfServiceAt,
+        accepted_community_guidelines_at: acceptedCommunityGuidelinesAt,
+        acknowledged_privacy_statement_at: acknowledgedPrivacyStatementAt,
       })
+
+      if (insertError?.code === 'PGRST204') {
+        const fallback = await admin.from('profiles').insert(baseInsert)
+        insertError = fallback.error
+      }
 
       if (insertError) {
         console.error('Error creating profile on callback:', insertError)

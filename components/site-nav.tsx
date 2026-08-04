@@ -90,7 +90,9 @@ export function SiteNav() {
     <>
       <NavLink href="/" onClick={closeMobile}>Home</NavLink>
       {userRole !== 'admin' && (
-        <NavLink href="/browse" onClick={closeMobile}>Find work</NavLink>
+        <NavLink href="/browse" onClick={closeMobile}>
+          {userRole === 'lister' ? 'Jobs' : 'Find work'}
+        </NavLink>
       )}
       <NavLink href="/mission" onClick={closeMobile}>Our mission</NavLink>
       {loading ? (
