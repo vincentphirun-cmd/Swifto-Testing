@@ -9,6 +9,8 @@ type Props = {
   subtitle: string
   children?: React.ReactNode
   showPlaceholderNotice?: boolean
+  /** Show reminder when inline [Insert …] fields still need filling in before launch. */
+  showUnresolvedFieldsNotice?: boolean
 }
 
 /** Shared layout for legal docs — body is placeholder until real copy is added. */
@@ -17,6 +19,7 @@ export function LegalPlaceholderPage({
   subtitle,
   children,
   showPlaceholderNotice = true,
+  showUnresolvedFieldsNotice = false,
 }: Props) {
   return (
     <>
@@ -31,6 +34,16 @@ export function LegalPlaceholderPage({
                 <p className="mt-1 text-amber-900/90">
                   Replace this page with your final legal text before launch. This copy is temporary
                   and not legal advice.
+                </p>
+              </div>
+            )}
+
+            {showUnresolvedFieldsNotice && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-950">
+                <p className="font-semibold">Action needed before launch</p>
+                <p className="mt-1 text-amber-900/90">
+                  Text highlighted in amber below is still a placeholder. Replace each highlighted
+                  item with your final company or contact details before going live.
                 </p>
               </div>
             )}

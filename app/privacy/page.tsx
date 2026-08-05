@@ -1,6 +1,7 @@
 'use client'
 
 import { LegalPlaceholderPage } from '@/components/legal-placeholder-page'
+import { LegalPlaceholderMark } from '@/components/legal-placeholder-mark'
 
 export default function PrivacyPage() {
   return (
@@ -8,6 +9,7 @@ export default function PrivacyPage() {
       title="Privacy Statement"
       subtitle="How Swifto collects, uses, stores, protects, and shares personal information"
       showPlaceholderNotice={false}
+      showUnresolvedFieldsNotice
     >
       <p className="text-sm text-ink/60">
         <strong>Last updated:</strong> 4 August 2026
@@ -69,19 +71,19 @@ export default function PrivacyPage() {
       <p>
         Swifto
         <br />
-        [Insert legal company name once registered]
+        <LegalPlaceholderMark>[Insert legal company name once registered]</LegalPlaceholderMark>
         <br />
-        [Insert business address or registered office if applicable]
+        <LegalPlaceholderMark>[Insert business address or registered office if applicable]</LegalPlaceholderMark>
         <br />
-        [Insert contact email]
+        <LegalPlaceholderMark>[Insert contact email]</LegalPlaceholderMark>
         <br />
-        [Insert website URL]
+        <LegalPlaceholderMark>[Insert website URL]</LegalPlaceholderMark>
       </p>
       <p>For privacy matters, you can contact our Privacy Officer at:</p>
       <p>
-        Privacy Officer: [Insert name or role]
+        Privacy Officer: <LegalPlaceholderMark>[Insert name or role]</LegalPlaceholderMark>
         <br />
-        Email: [Insert privacy/support email]
+        Email: <LegalPlaceholderMark>[Insert privacy/support email]</LegalPlaceholderMark>
       </p>
       <p>
         Every New Zealand organisation is required to have someone fulfilling the role of privacy
@@ -417,7 +419,8 @@ export default function PrivacyPage() {
       </p>
       <p>
         You can unsubscribe from marketing messages at any time by using the unsubscribe link or
-        instructions in the message, or by contacting us at [Insert email].
+        instructions in the message, or by contacting us at{' '}
+        <LegalPlaceholderMark>[Insert email]</LegalPlaceholderMark>.
       </p>
       <p>
         You may still receive service-related messages that are necessary for your account or use
@@ -543,7 +546,7 @@ export default function PrivacyPage() {
       <p>
         To make a request, contact us at:
         <br />
-        [Insert privacy/support email]
+        <LegalPlaceholderMark>[Insert privacy/support email]</LegalPlaceholderMark>
       </p>
       <p>
         We may need to verify your identity before responding to an access or correction request.
@@ -557,7 +560,7 @@ export default function PrivacyPage() {
       <p>
         You may request deletion of your Swifto account by contacting us at:
         <br />
-        [Insert privacy/support email]
+        <LegalPlaceholderMark>[Insert privacy/support email]</LegalPlaceholderMark>
       </p>
       <p>
         If you request account deletion, Swifto will take reasonable steps to delete or de-identify
@@ -599,9 +602,9 @@ export default function PrivacyPage() {
       <p>
         Contact:
         <br />
-        Privacy Officer: [Insert name or role]
+        Privacy Officer: <LegalPlaceholderMark>[Insert name or role]</LegalPlaceholderMark>
         <br />
-        Email: [Insert privacy/support email]
+        Email: <LegalPlaceholderMark>[Insert privacy/support email]</LegalPlaceholderMark>
       </p>
       <p>We will consider your complaint and respond within a reasonable timeframe.</p>
       <p>
@@ -628,11 +631,11 @@ export default function PrivacyPage() {
       <p>
         Swifto Privacy Officer
         <br />
-        Email: [Insert privacy/support email]
+        Email: <LegalPlaceholderMark>[Insert privacy/support email]</LegalPlaceholderMark>
         <br />
-        Website: [Insert website URL]
+        Website: <LegalPlaceholderMark>[Insert website URL]</LegalPlaceholderMark>
         <br />
-        Address: [Insert business or registered address, if applicable]
+        Address: <LegalPlaceholderMark>[Insert business or registered address, if applicable]</LegalPlaceholderMark>
       </p>
     </LegalPlaceholderPage>
   )
