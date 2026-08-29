@@ -1,7 +1,6 @@
 'use client'
 
 import { LegalPlaceholderPage } from '@/components/legal-placeholder-page'
-import { LegalPlaceholderMark } from '@/components/legal-placeholder-mark'
 
 export default function PrivacyPage() {
   return (
@@ -9,7 +8,6 @@ export default function PrivacyPage() {
       title="Privacy Statement"
       subtitle="How Swifto collects, uses, stores, protects, and shares personal information"
       showPlaceholderNotice={false}
-      showUnresolvedFieldsNotice
     >
       <p className="text-sm text-ink/60">
         <strong>Last updated:</strong> 4 August 2026
@@ -69,21 +67,30 @@ export default function PrivacyPage() {
       <h2 id="who-we-are" className="text-xl font-semibold text-ink">2. Who We Are</h2>
       <p>In this Privacy Policy, &ldquo;Swifto,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo; refers to:</p>
       <p>
-        Swifto
+        Swifto Limited, trading as Swifto
         <br />
-        <LegalPlaceholderMark>[Insert legal company name once registered]</LegalPlaceholderMark>
+        New Zealand company number 9450926
         <br />
-        <LegalPlaceholderMark>[Insert business address or registered office if applicable]</LegalPlaceholderMark>
+        NZBN 9429053885234
         <br />
-        <LegalPlaceholderMark>[Insert contact email]</LegalPlaceholderMark>
+        Email:{' '}
+        <a href="mailto:hello@swifto.co.nz" className="text-primary hover:underline font-medium">
+          hello@swifto.co.nz
+        </a>
         <br />
-        <LegalPlaceholderMark>[Insert website URL]</LegalPlaceholderMark>
+        Website:{' '}
+        <a href="https://swifto.co.nz" className="text-primary hover:underline font-medium">
+          https://swifto.co.nz
+        </a>
       </p>
       <p>For privacy matters, you can contact our Privacy Officer at:</p>
       <p>
-        Privacy Officer: <LegalPlaceholderMark>[Insert name or role]</LegalPlaceholderMark>
+        Privacy Officer
         <br />
-        Email: <LegalPlaceholderMark>[Insert privacy/support email]</LegalPlaceholderMark>
+        Email:{' '}
+        <a href="mailto:hello@swifto.co.nz" className="text-primary hover:underline font-medium">
+          hello@swifto.co.nz
+        </a>
       </p>
       <p>
         Every New Zealand organisation is required to have someone fulfilling the role of privacy
@@ -420,7 +427,10 @@ export default function PrivacyPage() {
       <p>
         You can unsubscribe from marketing messages at any time by using the unsubscribe link or
         instructions in the message, or by contacting us at{' '}
-        <LegalPlaceholderMark>[Insert email]</LegalPlaceholderMark>.
+        <a href="mailto:hello@swifto.co.nz" className="text-primary hover:underline font-medium">
+          hello@swifto.co.nz
+        </a>
+        .
       </p>
       <p>
         You may still receive service-related messages that are necessary for your account or use
@@ -546,7 +556,9 @@ export default function PrivacyPage() {
       <p>
         To make a request, contact us at:
         <br />
-        <LegalPlaceholderMark>[Insert privacy/support email]</LegalPlaceholderMark>
+        <a href="mailto:hello@swifto.co.nz" className="text-primary hover:underline font-medium">
+          hello@swifto.co.nz
+        </a>
       </p>
       <p>
         We may need to verify your identity before responding to an access or correction request.
@@ -560,7 +572,9 @@ export default function PrivacyPage() {
       <p>
         You may request deletion of your Swifto account by contacting us at:
         <br />
-        <LegalPlaceholderMark>[Insert privacy/support email]</LegalPlaceholderMark>
+        <a href="mailto:hello@swifto.co.nz" className="text-primary hover:underline font-medium">
+          hello@swifto.co.nz
+        </a>
       </p>
       <p>
         If you request account deletion, Swifto will take reasonable steps to delete or de-identify
@@ -602,9 +616,12 @@ export default function PrivacyPage() {
       <p>
         Contact:
         <br />
-        Privacy Officer: <LegalPlaceholderMark>[Insert name or role]</LegalPlaceholderMark>
+        Privacy Officer
         <br />
-        Email: <LegalPlaceholderMark>[Insert privacy/support email]</LegalPlaceholderMark>
+        Email:{' '}
+        <a href="mailto:hello@swifto.co.nz" className="text-primary hover:underline font-medium">
+          hello@swifto.co.nz
+        </a>
       </p>
       <p>We will consider your complaint and respond within a reasonable timeframe.</p>
       <p>
@@ -631,11 +648,15 @@ export default function PrivacyPage() {
       <p>
         Swifto Privacy Officer
         <br />
-        Email: <LegalPlaceholderMark>[Insert privacy/support email]</LegalPlaceholderMark>
+        Email:{' '}
+        <a href="mailto:hello@swifto.co.nz" className="text-primary hover:underline font-medium">
+          hello@swifto.co.nz
+        </a>
         <br />
-        Website: <LegalPlaceholderMark>[Insert website URL]</LegalPlaceholderMark>
-        <br />
-        Address: <LegalPlaceholderMark>[Insert business or registered address, if applicable]</LegalPlaceholderMark>
+        Website:{' '}
+        <a href="https://swifto.co.nz" className="text-primary hover:underline font-medium">
+          https://swifto.co.nz
+        </a>
       </p>
     </LegalPlaceholderPage>
   )

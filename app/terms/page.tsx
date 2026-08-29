@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { LegalPlaceholderPage } from '@/components/legal-placeholder-page'
-import { LegalPlaceholderMark } from '@/components/legal-placeholder-mark'
 
 export default function TermsPage() {
   return (
@@ -10,7 +9,6 @@ export default function TermsPage() {
       title="Terms of Service"
       subtitle="Terms and conditions for using the Swifto platform"
       showPlaceholderNotice={false}
-      showUnresolvedFieldsNotice
     >
       <p className="text-sm text-ink/60">
         <strong>Last updated:</strong> 5 August 2026
@@ -67,10 +65,8 @@ export default function TermsPage() {
         platform, website, and services (collectively, the &ldquo;Platform&rdquo;).
       </p>
       <p>
-        The Platform is operated by{' '}
-        <LegalPlaceholderMark>[LEGAL COMPANY NAME]</LegalPlaceholderMark>, trading as Swifto, a
-        company registered in{' '}
-        <LegalPlaceholderMark>[COUNTRY / STATE / COMPANY NUMBER]</LegalPlaceholderMark>.
+        The Platform is operated by Swifto Limited, trading as Swifto, a company registered in New
+        Zealand (company number 9450926).
       </p>
       <p>
         By creating an account or using the Platform, you agree to be bound by these Terms. If you
@@ -360,8 +356,8 @@ export default function TermsPage() {
         Swifto Support
         <br />
         Email:{' '}
-        <a href="mailto:swifto@support.com" className="text-primary hover:underline font-medium">
-          swifto@support.com
+        <a href="mailto:hello@swifto.co.nz" className="text-primary hover:underline font-medium">
+          hello@swifto.co.nz
         </a>
       </p>
     </LegalPlaceholderPage>

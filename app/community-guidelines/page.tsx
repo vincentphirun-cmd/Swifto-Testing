@@ -34,8 +34,8 @@ export default function CommunityGuidelinesPage() {
       <h2 className="text-xl font-semibold text-ink">5. Reporting Issues</h2>
       <p>
         Users may report misconduct or safety concerns to:{' '}
-        <a href="mailto:swifto@support.com" className="text-primary hover:underline font-medium">
-          swifto@support.com
+        <a href="mailto:hello@swifto.co.nz" className="text-primary hover:underline font-medium">
+          hello@swifto.co.nz
         </a>
       </p>
     </LegalPlaceholderPage>

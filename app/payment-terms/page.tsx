@@ -183,8 +183,8 @@ export default function PaymentTermsPage() {
       </p>
       <p>
         Contact:{' '}
-        <a href="mailto:swifto@support.com" className="text-primary hover:underline font-medium">
-          swifto@support.com
+        <a href="mailto:hello@swifto.co.nz" className="text-primary hover:underline font-medium">
+          hello@swifto.co.nz
         </a>
       </p>
 
@@ -259,8 +259,8 @@ export default function PaymentTermsPage() {
         Swifto Support
         <br />
         Email:{' '}
-        <a href="mailto:swifto@support.com" className="text-primary hover:underline font-medium">
-          swifto@support.com
+        <a href="mailto:hello@swifto.co.nz" className="text-primary hover:underline font-medium">
+          hello@swifto.co.nz
         </a>
       </p>
     </LegalPlaceholderPage>
