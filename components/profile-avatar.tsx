@@ -2,6 +2,8 @@
 
 import { useRef, useState, type ChangeEvent } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { patchOwnProfile } from '@/lib/profile-api'
+import { AVATAR_MAX_BYTES, AVATAR_MIME_TYPES } from '@/lib/security-constants'
 
 type BaseProps = {
   avatarUrl?: string | null
@@ -61,15 +63,14 @@ export function ProfileAvatarUpload({
 
     setError(null)
 
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
+    const allowedTypes: string[] = [...AVATAR_MIME_TYPES]
     if (!allowedTypes.includes(file.type)) {
       setError('Please upload a JPG, PNG, or WEBP image.')
       e.target.value = ''
       return
     }
 
-    const maxSize = 2 * 1024 * 1024
-    if (file.size > maxSize) {
+    if (file.size > AVATAR_MAX_BYTES) {
       setError('Image must be smaller than 2MB.')
       e.target.value = ''
       return
@@ -89,13 +90,8 @@ export function ProfileAvatarUpload({
 
       const { data } = supabase.storage.from('avatars').getPublicUrl(filePath)
       const publicUrl = `${data.publicUrl}?t=${Date.now()}`
-
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl })
-        .eq('id', userId)
-
-      if (updateError) throw updateError
+      const patched = await patchOwnProfile({ avatar_url: publicUrl })
+      if (!patched.ok) throw new Error(patched.error)
 
       onUploaded(publicUrl)
     } catch (err) {

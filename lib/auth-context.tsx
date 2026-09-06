@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { Session, User } from '@supabase/supabase-js'
 import { createClient } from './supabase/client'
-import { identifyUser } from './posthog'
+import { identifyUser, resetAnalytics } from './posthog'
 import { isAbortError } from './abort-error'
 
 type AuthContextType = {
@@ -128,6 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase])
 
   const signOut = async () => {
+    resetAnalytics()
     await supabase.auth.signOut()
     setSession(null)
     setUser(null)

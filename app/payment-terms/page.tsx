@@ -45,7 +45,10 @@ export default function PaymentTermsPage() {
       <p>
         Swifto provides a platform that connects listers who need tasks completed with students who
         perform those tasks. Swifto facilitates payments and payouts but is not a bank, escrow
-        agent, or payment institution.
+        agent, or payment institution. Swifto does not currently offer subscriptions or automatic
+        renewal charges. Listers add funds or pay per job. If we add a recurring product later, we
+        will obtain clear consent, show the price and period, send a reminder before renewal, and
+        provide an in-app cancel path that is no harder than signing up.
       </p>
 
       <h2 id="payment-processing" className="text-xl font-semibold text-ink">2. Payment Processing</h2>

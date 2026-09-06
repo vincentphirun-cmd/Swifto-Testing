@@ -28,8 +28,22 @@ In your Vercel project → **Settings** → **Environment Variables**, add:
 | `STRIPE_WEBHOOK_SECRET` | `whsec_...` | From Stripe webhook (Step 5) |
 | `NEXT_PUBLIC_POSTHOG_KEY` | `phc_...` | From PostHog (optional) |
 | `NEXT_PUBLIC_POSTHOG_HOST` | `https://us.i.posthog.com` | Or EU host |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | site key | Cloudflare Turnstile (optional locally) |
+| `TURNSTILE_SECRET_KEY` | secret key | Keep secret; required if site key is set |
 
 Use **Production** environment for live; add **Preview** if you want preview deployments.
+
+After deploy:
+
+1. Run `supabase_security_hardening_migration.sql` in the Supabase SQL Editor.
+2. Confirm **Storage → lister-id-docs** is **private** (not public).
+3. Enable Supabase Auth rate limits (Dashboard → Authentication → Rate Limits / Attack protection).
+4. Enable leaked password protection if offered in Auth settings.
+5. Set `NEXT_PUBLIC_APP_URL=https://swifto.co.nz` so emails and Stripe always use HTTPS.
+6. Scan Git history for leaked keys (`gitleaks`) and rotate any secret that was ever committed.
+7. Have a lawyer review `/privacy` and `/terms` before public launch.
+
+Vercel already redirects HTTP → HTTPS on custom domains. The app also sends HSTS and other security headers.
 
 ---
 

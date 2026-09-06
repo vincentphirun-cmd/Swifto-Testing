@@ -10,9 +10,9 @@ export default function PrivacyPage() {
       showPlaceholderNotice={false}
     >
       <p className="text-sm text-ink/60">
-        <strong>Last updated:</strong> 4 August 2026
+        <strong>Last updated:</strong> 3 September 2026
         <br />
-        <strong>Version:</strong> 1.0
+        <strong>Version:</strong> 1.1
       </p>
 
       <div className="rounded-2xl border border-ink/10 bg-canvas px-5 py-4">
@@ -27,6 +27,7 @@ export default function PrivacyPage() {
           <a href="#locations-safety" className="text-primary hover:underline">7. Job Locations and User Safety</a>
           <a href="#payments" className="text-primary hover:underline">8. Payments</a>
           <a href="#cookies-analytics" className="text-primary hover:underline">9. Cookies and Analytics</a>
+          <a href="#artificial-intelligence" className="text-primary hover:underline">9A. Artificial Intelligence</a>
           <a href="#service-marketing" className="text-primary hover:underline">10. Service Messages and Marketing Communications</a>
           <a href="#sharing" className="text-primary hover:underline">11. How We Share Personal Information</a>
           <a href="#overseas-storage" className="text-primary hover:underline">12. Overseas Storage and Service Providers</a>
@@ -394,9 +395,35 @@ export default function PrivacyPage() {
         some parts of the Platform may not work properly.
       </p>
       <p>
-        If Swifto uses analytics or tracking tools such as PostHog, Google Analytics, or similar
-        services, we will use reasonable steps to avoid collecting unnecessary sensitive information
-        through those tools.
+        If Swifto uses analytics or tracking tools such as PostHog, we will use reasonable steps to
+        avoid collecting unnecessary sensitive information through those tools.
+      </p>
+      <p>
+        Essential cookies are needed to keep you signed in and to protect the Platform. Analytics
+        cookies are optional. We show a consent banner on first visit and do not load PostHog until
+        you accept analytics. You can change this later by clearing site data for swifto.co.nz or
+        contacting us.
+      </p>
+      <p>
+        New Zealand privacy law requires us to tell you when we collect personal information. This
+        Privacy Statement, the signup acknowledgement, and the cookie banner are how we do that.
+      </p>
+
+      <h2 id="artificial-intelligence" className="text-xl font-semibold text-ink">9A. Artificial Intelligence</h2>
+      <p>
+        Swifto does not currently use generative AI chatbots, automated decision-making about users,
+        or AI tools that read your messages or job content to make account decisions.
+      </p>
+      <p>
+        If we add AI features later, we will update this Privacy Statement before those features go
+        live, including what data is sent to any AI provider and whether it is processed outside New
+        Zealand.
+      </p>
+      <p>
+        If an AI feature is added that users can talk to, it will include safety responses for
+        self-harm and suicide disclosures, including New Zealand help such as calling or texting 1737
+        or calling 111 in an emergency. We will not provide instructions that help someone harm
+        themselves.
       </p>
 
       <h2 id="service-marketing" className="text-xl font-semibold text-ink">10. Service Messages and Marketing Communications</h2>
@@ -441,6 +468,18 @@ export default function PrivacyPage() {
       <p>
         Swifto may share personal information where reasonably necessary to operate the Platform,
         provide services, protect users, comply with law, or enforce our terms.
+      </p>
+      <p>We currently use these service providers (processors) to operate Swifto:</p>
+      <ul>
+        <li>Supabase (authentication, database, and file storage)</li>
+        <li>Stripe (card payments, payouts, and related transaction processing)</li>
+        <li>Vercel (website hosting)</li>
+        <li>Resend (transactional email)</li>
+        <li>PostHog (product analytics, only if you accept analytics cookies)</li>
+      </ul>
+      <p>
+        These providers may store or process information in New Zealand or overseas. We do not sell
+        personal information to advertisers.
       </p>
       <p>We may share information with:</p>
       <ul>
@@ -570,11 +609,21 @@ export default function PrivacyPage() {
 
       <h2 id="account-deletion" className="text-xl font-semibold text-ink">16. Account Deletion Requests</h2>
       <p>
-        You may request deletion of your Swifto account by contacting us at:
+        You may delete your Swifto account in the app at{' '}
+        <a href="/settings/account" className="text-primary hover:underline font-medium">
+          Account &amp; privacy
+        </a>
+        , or by contacting us at:
         <br />
         <a href="mailto:hello@swifto.co.nz" className="text-primary hover:underline font-medium">
           hello@swifto.co.nz
         </a>
+      </p>
+      <p>
+        In-app deletion is intended to take a similar number of steps as creating an account. When
+        you delete your account, Swifto will remove your login, profile, job posts, applications,
+        messages we hold for you, profile photo, and identity documents stored in our buckets,
+        except where we must retain limited records.
       </p>
       <p>
         If you request account deletion, Swifto will take reasonable steps to delete or de-identify

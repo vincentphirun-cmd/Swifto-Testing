@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/client'
 import { getStudentPayoutEstimate } from '@/lib/fees'
+import { fetchPublicProfiles } from '@/lib/public-data'
 
 export type ProfileCompletionJob = {
   id: string
@@ -39,9 +40,9 @@ async function loadJobsAndNames(
   const jobIds = completions.map((c) => c.job_id)
   const counterpartyIds = Array.from(new Set(completions.map((c) => c[counterpartyKey])))
 
-  const [{ data: jobsData }, { data: profData }] = await Promise.all([
+  const [{ data: jobsData }, profData] = await Promise.all([
     supabase.from('jobs').select('id, job_name, price, category').in('id', jobIds),
-    supabase.from('profiles').select('id, first_name, last_name').in('id', counterpartyIds),
+    fetchPublicProfiles(supabase, counterpartyIds, 'id, first_name, last_name'),
   ])
 
   const jobsMap: Record<string, { job_name: string; price: number; category: string | null }> = {}

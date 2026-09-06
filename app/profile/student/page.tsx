@@ -21,6 +21,7 @@ import {
 } from '@/lib/profile-completions'
 import { getAccountIdentity } from '@/lib/profile-account-identity'
 import { summarizeRatings } from '@/lib/ratings'
+import { patchOwnProfile } from '@/lib/profile-api'
 
 type Profile = {
   first_name: string
@@ -165,16 +166,12 @@ export default function StudentProfilePage() {
     setTaxSuccess(false)
     setTaxSaving(true)
     try {
-      const supabase = createClient()
       const nextGstNumber = draftGstRegistered ? draftGstNumber.trim() || null : null
-      const { error: err } = await supabase
-        .from('profiles')
-        .update({
-          gst_registered: draftGstRegistered,
-          gst_number: nextGstNumber,
-        })
-        .eq('id', user.id)
-      if (err) throw err
+      const result = await patchOwnProfile({
+        gst_registered: draftGstRegistered,
+        gst_number: nextGstNumber,
+      })
+      if (!result.ok) throw new Error(result.error)
       setGstRegistered(draftGstRegistered)
       setGstNumber(draftGstNumber)
       setProfile((prev) =>
@@ -217,15 +214,14 @@ export default function StudentProfilePage() {
     setDetailsSuccess(false)
     setDetailsSaving(true)
     try {
-      const supabase = createClient()
       const payload = {
         field_of_study: draftFieldOfStudy.trim() || null,
         interests: draftInterests.trim() || null,
         academic_achievements: draftAcademicAchievements.trim() || null,
         extracurricular_achievements: draftExtracurricularAchievements.trim() || null,
       }
-      const { error: err } = await supabase.from('profiles').update(payload).eq('id', user.id)
-      if (err) throw err
+      const result = await patchOwnProfile(payload)
+      if (!result.ok) throw new Error(result.error)
       setFieldOfStudy(draftFieldOfStudy)
       setInterests(draftInterests)
       setAcademicAchievements(draftAcademicAchievements)
@@ -296,6 +292,11 @@ export default function StudentProfilePage() {
                     value={accountIdentity.email}
                   />
                   <ProfileIdentityNote />
+                  <div className="pt-2">
+                    <Link href="/settings/account" className="text-sm text-primary hover:text-accent transition-colors">
+                      Account &amp; privacy →
+                    </Link>
+                  </div>
                 </div>
 
                 <ProfileEditableSection

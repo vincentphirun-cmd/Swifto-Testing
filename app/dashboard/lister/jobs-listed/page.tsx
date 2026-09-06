@@ -12,6 +12,7 @@ import { isAbortError } from '@/lib/abort-error'
 import { buildFullyCompletedJobIds, type JobCompletionVerify } from '@/lib/active-jobs'
 import { fetchStudentRatingSummariesBatch } from '@/lib/ratings'
 import { fetchOpenChatJobIds } from '@/lib/job-chat'
+import { fetchPublicProfiles } from '@/lib/public-data'
 
 type ApplicationStatus = 'pending' | 'accepted' | 'not_selected'
 
@@ -116,19 +117,23 @@ export default function JobsListedPage() {
       const studentIds = Array.from(new Set((appsData ?? []).map((a: { student_id: string }) => a.student_id)))
       let profilesMap: Record<string, ApplicationRow['profiles']> = {}
       if (studentIds.length > 0) {
-        const [{ data: profData }, ratingSummaries] = await Promise.all([
-          supabase
-            .from('profiles')
-            .select('id, first_name, last_name, university, total_jobs, member_since')
-            .in('id', studentIds),
+        const [profData, ratingSummaries] = await Promise.all([
+          fetchPublicProfiles(
+            supabase,
+            studentIds,
+            'id, first_name, last_name, university, total_jobs, member_since'
+          ),
           fetchStudentRatingSummariesBatch(supabase, studentIds),
         ])
-        for (const p of profData ?? []) {
+        for (const p of profData) {
           const summary = ratingSummaries[p.id]
           profilesMap[p.id] = {
-            ...p,
-            rating:
-              summary && summary.reviewCount > 0 ? summary.averageRating : null,
+            first_name: p.first_name,
+            last_name: p.last_name,
+            university: p.university ?? null,
+            total_jobs: p.total_jobs ?? null,
+            member_since: p.member_since ?? '',
+            rating: summary && summary.reviewCount > 0 ? summary.averageRating : null,
           }
         }
       }

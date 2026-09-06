@@ -19,6 +19,7 @@ import {
 } from '@/lib/profile-completions'
 import { getAccountIdentity } from '@/lib/profile-account-identity'
 import { summarizeRatings } from '@/lib/ratings'
+import { patchOwnProfile } from '@/lib/profile-api'
 
 type Profile = {
   first_name: string
@@ -152,8 +153,8 @@ export default function ListerProfilePage() {
         interests: draftInterests.trim() || null,
         preferred_job_categories: draftPreferredJobCategories.trim() || null,
       }
-      const { error: err } = await supabase.from('profiles').update(payload).eq('id', user.id)
-      if (err) throw err
+      const result = await patchOwnProfile(payload)
+      if (!result.ok) throw new Error(result.error)
       setLocation(draftLocation)
       setBio(draftBio)
       setInterests(draftInterests)
@@ -221,6 +222,9 @@ export default function ListerProfilePage() {
                   <div className="pt-2">
                     <Link href="/settings/tax-gst" className="text-sm text-primary hover:text-accent transition-colors">
                       Tax &amp; GST help →
+                    </Link>
+                    <Link href="/settings/account" className="block text-sm text-primary hover:text-accent transition-colors mt-2">
+                      Account &amp; privacy →
                     </Link>
                   </div>
                 </div>

@@ -12,6 +12,8 @@ import { StarRating } from '@/components/design/star-rating'
 import { DESIGN_PHOTOS } from '@/lib/design-photos'
 import { captureEvent } from '@/lib/posthog'
 import { fetchUserRole, pickPostLoginPath } from '@/lib/user-role'
+import { passAuthGate } from '@/lib/auth-gate'
+import { TurnstileField } from '@/components/turnstile-field'
 
 function LoginContent() {
   const router = useRouter()
@@ -23,6 +25,7 @@ function LoginContent() {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
 
   useEffect(() => {
     const errorParam = searchParams.get('error')
@@ -91,6 +94,13 @@ function LoginContent() {
     setLoading(true)
 
     try {
+      const gated = await passAuthGate('login', formData.email, turnstileToken)
+      if (!gated.ok) {
+        setError(gated.error)
+        setLoading(false)
+        return
+      }
+
       const supabase = createClient()
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: formData.email,
@@ -98,7 +108,7 @@ function LoginContent() {
       })
 
       if (signInError) {
-        setError(signInError.message)
+        setError('Incorrect email or password.')
         setLoading(false)
         return
       }
@@ -188,6 +198,8 @@ function LoginContent() {
                   />
                 </div>
 
+                <TurnstileField onToken={setTurnstileToken} />
+
                 <button
                   type="submit"
                   disabled={loading}
@@ -211,9 +223,9 @@ function LoginContent() {
             <div className="absolute bottom-7 left-7 right-7 text-white">
               <StarRating size={18} />
               <p className="font-display text-[22px] font-bold mt-2.5 leading-snug">
-                &ldquo;Swifto helped me cover rent without dropping a single class.&rdquo;
+                Built so students can earn around class — and locals can find trusted help nearby.
               </p>
-              <p className="text-sm text-white/85 mt-2">— Aroha, second-year student</p>
+              <p className="text-sm text-white/85 mt-2">Swifto, Aotearoa</p>
             </div>
           </div>
         </section>

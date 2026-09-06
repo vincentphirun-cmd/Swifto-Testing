@@ -8,6 +8,7 @@ import { SiteNav } from '@/components/site-nav'
 import { PageHero } from '@/components/page-hero'
 import { LoadingSpinner } from '@/components/loading-spinner'
 import { ErrorAlert } from '@/components/error-alert'
+import { fetchPublicProfiles } from '@/lib/public-data'
 
 type CompletionRow = {
   id: string
@@ -57,7 +58,7 @@ export default function ListerJobsCompletedPage() {
       const jobIds = compData.map((c) => c.job_id)
       const studentIds = compData.map((c) => c.student_id)
       const { data: jobsData } = await supabase.from('jobs').select('id, job_name, category, size_or_time, address, price').in('id', jobIds)
-      const { data: profData } = await supabase.from('profiles').select('id, first_name, last_name').in('id', studentIds)
+      const profData = await fetchPublicProfiles(supabase, studentIds, 'id, first_name, last_name')
 
       const jobsMap: Record<string, NonNullable<typeof jobsData>[number]> = {}
       for (const j of jobsData ?? []) jobsMap[j.id] = j

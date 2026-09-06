@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { AuthProvider } from '@/lib/auth-context'
 import { ErrorBoundary } from './error-boundary'
 import { PostHogProvider } from './posthog-provider'
+import { CookieConsentBanner } from './cookie-consent-banner'
 import { PasswordRecoveryRedirect } from './password-recovery-redirect'
 import { isAbortError } from '@/lib/abort-error'
 
@@ -27,6 +28,7 @@ export function AuthProviderWrapper({ children }: { children: React.ReactNode })
       <PostHogProvider>
         <AuthProvider>
           <PasswordRecoveryRedirect />
+          <CookieConsentBanner />
           {children}
         </AuthProvider>
       </PostHogProvider>

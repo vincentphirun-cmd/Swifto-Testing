@@ -12,6 +12,7 @@ import { ProfileAvatar } from '@/components/profile-avatar'
 import { DESIGN_PHOTOS } from '@/lib/design-photos'
 import { buildFullyCompletedJobIds, type JobCompletionVerify } from '@/lib/active-jobs'
 import { fetchRatingSummary } from '@/lib/ratings'
+import { fetchJobsByIds } from '@/lib/public-data'
 
 type ActiveJobRow = {
   job_id: string
@@ -171,10 +172,8 @@ export default function StudentDashboardPage() {
         .eq('student_id', user.id)
 
       const jobIds = appsData?.length ? Array.from(new Set(appsData.map((a) => a.job_id))) : []
-      const [{ data: jobsData }, { data: compData }] = await Promise.all([
-        jobIds.length
-          ? supabase.from('jobs').select('id, job_name, area, price, completion_date, is_flexible, status').in('id', jobIds)
-          : Promise.resolve({ data: [] as { id: string; job_name: string; area: string; price: number; completion_date: string | null; is_flexible: boolean; status: string }[] }),
+      const [jobsData, { data: compData }] = await Promise.all([
+        jobIds.length ? fetchJobsByIds(supabase, jobIds) : Promise.resolve([]),
         jobIds.length
           ? supabase.from('job_completions').select('job_id, lister_verified_at, student_verified_at').eq('student_id', user.id).in('job_id', jobIds)
           : Promise.resolve({ data: [] as JobCompletionVerify[] }),

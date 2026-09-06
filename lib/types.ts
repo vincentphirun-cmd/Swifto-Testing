@@ -18,7 +18,7 @@ export type JobRow = {
   job_name: string
   category: string
   size_or_time: string
-  address: string
+  address?: string | null
   area: string
   price: number
   completion_date: string | null

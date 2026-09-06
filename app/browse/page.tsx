@@ -12,6 +12,7 @@ import { captureEvent } from '@/lib/posthog'
 import { LoadingSpinner } from '@/components/loading-spinner'
 import { ErrorAlert } from '@/components/error-alert'
 import { FeeBreakdown } from '@/components/fee-breakdown'
+import { PUBLIC_JOBS_TABLE } from '@/lib/security-constants'
 import { fetchStudentGstRegistered } from '@/lib/profile-completions'
 
 export default function BrowseJobsPage() {
@@ -38,11 +39,22 @@ export default function BrowseJobsPage() {
     setError(null)
     try {
       const supabase = createClient()
-      const { data, error: err } = await supabase
-        .from('jobs')
-        .select('id, job_name, category, size_or_time, address, area, price, completion_date, is_flexible, status, created_at, urgent_rebook_until')
-        .eq('status', 'active')
+      const publicSelect =
+        'id, job_name, category, size_or_time, area, price, completion_date, is_flexible, status, created_at, urgent_rebook_until'
+      let { data, error: err } = await supabase
+        .from(PUBLIC_JOBS_TABLE)
+        .select(publicSelect)
         .order('created_at', { ascending: false })
+
+      if (err) {
+        const fallback = await supabase
+          .from('jobs')
+          .select(publicSelect)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+        data = fallback.data
+        err = fallback.error
+      }
 
       if (err) {
         setError(err.message)
@@ -162,7 +174,7 @@ export default function BrowseJobsPage() {
         fetchStudentGstRegistered(user.id),
       ])
       setGstRegistered(gstReg)
-      const ids = new Set((appsResult.data ?? []).map((r: { job_id: string }) => r.job_id))
+      const ids = new Set<string>((appsResult.data ?? []).map((r: { job_id: string }) => r.job_id))
       setAppliedJobs(ids)
     }
     fetchApplications()

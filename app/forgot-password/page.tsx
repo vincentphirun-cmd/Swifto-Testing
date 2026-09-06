@@ -7,12 +7,15 @@ import { SiteNav } from '@/components/site-nav'
 import { SwiftoWordmark } from '@/components/swifto-wordmark'
 import { DesignPhoto } from '@/components/design/design-photo'
 import { DESIGN_PHOTOS } from '@/lib/design-photos'
+import { passAuthGate } from '@/lib/auth-gate'
+import { TurnstileField } from '@/components/turnstile-field'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sent, setSent] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -20,6 +23,13 @@ export default function ForgotPasswordPage() {
     setLoading(true)
 
     try {
+      const gated = await passAuthGate('reset', email, turnstileToken)
+      if (!gated.ok) {
+        setError(gated.error)
+        setLoading(false)
+        return
+      }
+
       const supabase = createClient()
       const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'
       // Land directly on reset page (also allow-list this URL in Supabase Redirect URLs)
@@ -87,6 +97,8 @@ export default function ForgotPasswordPage() {
                     placeholder="you@example.com"
                   />
                 </div>
+
+                <TurnstileField onToken={setTurnstileToken} />
 
                 <button
                   type="submit"

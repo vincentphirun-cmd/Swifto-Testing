@@ -6,23 +6,23 @@ type Props = {
   light?: boolean
 }
 
-export function SwiftoWordmark({ className = '', asLink = true, light = false }: Props) {
+export function SwiftoWordmark({ className = '', asLink = true }: Props) {
   const inner = (
-    <span className={`inline-flex items-baseline gap-0.5 ${className}`}>
-      <span className={`font-display text-[1.65rem] md:text-[1.7rem] font-extrabold tracking-tight ${light ? 'text-white' : 'text-ink'}`}>
-        Swifto
-      </span>
-      <span className="inline-block w-2 h-2 rounded-full bg-primary mb-1" aria-hidden />
-    </span>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/brand/swifto-logo.png"
+      alt="Swifto"
+      className={`h-8 md:h-10 w-auto max-w-[min(100%,220px)] object-contain object-left ${className}`}
+    />
   )
 
   if (asLink) {
     return (
-      <Link href="/" className="shrink-0">
+      <Link href="/" className="shrink-0 inline-flex items-center" aria-label="Swifto home">
         {inner}
       </Link>
     )
   }
 
-  return inner
+  return <span className="inline-flex items-center shrink-0">{inner}</span>
 }

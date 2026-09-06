@@ -11,6 +11,7 @@ import { ErrorAlert } from '@/components/error-alert'
 import { FeeBreakdown } from '@/components/fee-breakdown'
 import { getStudentPayoutEstimate } from '@/lib/fees'
 import { fetchStudentGstRegistered } from '@/lib/profile-completions'
+import { fetchPublicProfiles } from '@/lib/public-data'
 
 type CompletionRow = {
   id: string
@@ -63,7 +64,7 @@ export default function StudentJobsCompletedPage() {
       const jobIds = compData.map((c) => c.job_id)
       const listerIds = compData.map((c) => c.lister_id)
       const { data: jobsData } = await supabase.from('jobs').select('id, job_name, category, size_or_time, address, price').in('id', jobIds)
-      const { data: profData } = await supabase.from('profiles').select('id, first_name, last_name').in('id', listerIds)
+      const profData = await fetchPublicProfiles(supabase, listerIds, 'id, first_name, last_name')
 
       const jobsMap: Record<string, NonNullable<typeof jobsData>[number]> = {}
       for (const j of jobsData ?? []) jobsMap[j.id] = j

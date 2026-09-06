@@ -7,6 +7,9 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/auth-context'
 import { SiteNav } from '@/components/site-nav'
 import { captureEvent } from '@/lib/posthog'
+import { passAuthGate } from '@/lib/auth-gate'
+import { TurnstileField } from '@/components/turnstile-field'
+import { validatePassword } from '@/lib/password'
 
 export default function SignUpPage() {
   const router = useRouter()
@@ -24,6 +27,7 @@ export default function SignUpPage() {
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [agreedToCommunityGuidelines, setAgreedToCommunityGuidelines] = useState(false)
   const [acknowledgedPrivacy, setAcknowledgedPrivacy] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
 
   // Redirect if already logged in — get role from profiles table (canonical source)
   useEffect(() => {
@@ -72,8 +76,9 @@ export default function SignUpPage() {
       return
     }
 
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters.')
+    const passwordError = validatePassword(formData.password)
+    if (passwordError) {
+      setError(passwordError)
       setLoading(false)
       return
     }
@@ -109,6 +114,13 @@ export default function SignUpPage() {
     }
 
     try {
+      const gated = await passAuthGate('signup', formData.email, turnstileToken)
+      if (!gated.ok) {
+        setError(gated.error)
+        setLoading(false)
+        return
+      }
+
       const supabase = createClient()
 
       // Parse name into first and last
@@ -393,7 +405,7 @@ export default function SignUpPage() {
                     value={formData.password}
                     onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                     required
-                    minLength={6}
+                    minLength={8}
                     className="w-full h-12 px-4 rounded-xl border border-ink/20 text-ink placeholder-ink/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
                     placeholder="Create a password"
                   />
@@ -480,6 +492,8 @@ export default function SignUpPage() {
                     .
                   </p>
                 </div>
+
+                <TurnstileField onToken={setTurnstileToken} />
 
                 <button
                   type="submit"

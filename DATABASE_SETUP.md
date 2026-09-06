@@ -121,6 +121,18 @@ Run `supabase_cancellation_rebooking_migration.sql` for student cancellation flo
 
 To enable the "Verify work done" flow where both lister and student confirm completion, run `supabase_after_completion_migration.sql` in the SQL Editor. This adds verification columns and triggers.
 
+## Security hardening (required before launch)
+
+Run `supabase_security_hardening_migration.sql` in the SQL Editor. This:
+
+- Restricts `profiles` so users can only read their own full row
+- Adds `public_profiles` (names/avatars only) and `public_jobs` (no street address)
+- Shows exact job addresses only to the lister, accepted student, or completion parties
+- Blocks client updates to `role`, `balance_cents`, `identity_status`, Stripe fields, and ratings
+- Keeps the `avatars` bucket public for photos only and re-asserts `lister-id-docs` as private
+
+Until this runs, browse/profile pages that query the new views will fall back to the old tables where possible.
+
 ## Additional policy (students viewing applied jobs)
 
 If you ran the schema before and students cannot see job details for jobs they applied to (e.g. when the job is `in_progress`), run this in the SQL Editor:

@@ -13,6 +13,7 @@ import { CancelJobModal } from '@/components/cancel-job-modal'
 import { buildFullyCompletedJobIds, type JobCompletionVerify } from '@/lib/active-jobs'
 import { fetchStudentGstRegistered } from '@/lib/profile-completions'
 import { fetchOpenChatJobIds } from '@/lib/job-chat'
+import { fetchJobsByIds, fetchPublicProfiles, jobLocationLabel } from '@/lib/public-data'
 
 type ApplicationWithJob = {
   id: string
@@ -24,7 +25,7 @@ type ApplicationWithJob = {
     job_name: string
     category: string
     size_or_time: string
-    address: string
+    address: string | null
     area: string
     price: number
     completion_date: string | null
@@ -76,18 +77,14 @@ export default function JobsAppliedPage() {
       }
 
       const jobIds = Array.from(new Set(appsData.map((a) => a.job_id)))
-      const { data: jobsData } = await supabase
-        .from('jobs')
-        .select('id, job_name, category, size_or_time, address, area, price, completion_date, is_flexible, start_time, urgent_rebook_until, lister_id, status')
-        .in('id', jobIds)
-
-      const jobsMap: Record<string, NonNullable<typeof jobsData>[number]> = {}
-      for (const j of jobsData ?? []) jobsMap[j.id] = j
+      const jobsData = await fetchJobsByIds(supabase, jobIds)
+      const jobsMap: Record<string, (typeof jobsData)[number]> = {}
+      for (const j of jobsData) jobsMap[j.id] = j
 
       const jobStatusMap: Record<string, string> = {}
       for (const j of jobsData ?? []) jobStatusMap[j.id] = j.status
 
-      const { data: allCompData } = await supabase
+        const { data: allCompData } = await supabase
         .from('job_completions')
         .select('job_id, lister_verified_at, student_verified_at')
         .eq('student_id', user.id)
@@ -99,11 +96,8 @@ export default function JobsAppliedPage() {
       const listerIds = Array.from(new Set((jobsData ?? []).map((j) => j.lister_id)))
       let listersMap: Record<string, { first_name: string; last_name: string }> = {}
       if (listerIds.length > 0) {
-        const { data: profData } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name')
-          .in('id', listerIds)
-        for (const p of profData ?? []) listersMap[p.id] = p
+        const profData = await fetchPublicProfiles(supabase, listerIds, 'id, first_name, last_name')
+        for (const p of profData) listersMap[p.id] = p
       }
 
       const acceptedJobIds = appsData.filter((a) => a.status === 'accepted').map((a) => a.job_id)
@@ -254,7 +248,7 @@ export default function JobsAppliedPage() {
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                     </svg>
-                                    <span>{app.jobs.address}</span>
+                                    <span>{jobLocationLabel({ status: app.status, address: app.jobs.address, area: app.jobs.area })}</span>
                                   </div>
                                 </div>
                                 <div className="text-right">
@@ -354,7 +348,7 @@ export default function JobsAppliedPage() {
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                     </svg>
-                                    <span>{app.jobs.address}</span>
+                                    <span>{jobLocationLabel({ status: app.status, address: app.jobs.address, area: app.jobs.area })}</span>
                                   </div>
                                 </div>
                                 <div className="text-right">

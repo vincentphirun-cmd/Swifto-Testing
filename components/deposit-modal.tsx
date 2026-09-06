@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { patchOwnProfile } from '@/lib/profile-api'
 
 type Props = {
   onClose: () => void
@@ -101,12 +102,8 @@ export function DepositModal({ onClose, onSuccess }: Props) {
         }
 
         const acceptedAt = new Date().toISOString()
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ accepted_payment_terms_at: acceptedAt })
-          .eq('id', user.id)
-
-        if (updateError && !isMissingLegalColumn(updateError.code)) {
+        const patched = await patchOwnProfile({ accepted_payment_terms_at: acceptedAt })
+        if (!patched.ok && !patched.error.toLowerCase().includes('column')) {
           setError('Could not record Payment & Payout Terms acceptance. Please try again.')
           setLoading(false)
           return

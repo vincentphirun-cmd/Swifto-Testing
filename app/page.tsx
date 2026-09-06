@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { SiteNav } from '@/components/site-nav'
+import { SwiftoWordmark } from '@/components/swifto-wordmark'
 import { PostJobLink } from '@/components/post-job-link'
 import { HeroBand } from '@/components/hero-band'
 import { DesignPhoto } from '@/components/design/design-photo'
@@ -97,7 +98,7 @@ export default function Home() {
                 <div>
                   <StarRating size={15} />
                   <p className="text-[13.5px] text-ink-2 mt-0.5">
-                    <strong className="text-ink font-semibold">2,400+ jobs</strong> done across Auckland
+                    Verified students. Payments held until you confirm.
                   </p>
                 </div>
               </div>
@@ -119,7 +120,7 @@ export default function Home() {
                     <img src={DESIGN_PHOTOS.avatar2} alt="" className="w-full h-full object-cover" />
                   </span>
                   <span className="text-xs text-ink-2">
-                    Mia applied · <strong className="text-success font-semibold">verified</strong>
+                    Mia applied · <strong className="text-success font-semibold">example</strong>
                   </span>
                 </div>
               </div>
@@ -199,8 +200,9 @@ export default function Home() {
         <section className="swifto-content py-16 md:py-[72px]">
           <div className="flex flex-wrap items-end justify-between gap-3 mb-7">
             <div>
-              <DesignBadge tone="accent" className="mb-3">Open now</DesignBadge>
-              <h2 className="text-[clamp(1.75rem,3.6vw,2.5rem)]">Jobs near you today</h2>
+              <DesignBadge tone="accent" className="mb-3">Examples</DesignBadge>
+              <h2 className="text-[clamp(1.75rem,3.6vw,2.5rem)]">The kinds of jobs you can post</h2>
+              <p className="text-sm text-ink-2 mt-2">Illustrative examples — not live listings.</p>
             </div>
             <Link href="/browse" className="swifto-btn-ghost h-11 px-4 text-sm">
               See all jobs
@@ -236,7 +238,7 @@ export default function Home() {
             <div className="relative z-10 text-center px-8 md:px-12 py-12 md:py-14">
               <h2 className="text-white text-[clamp(1.75rem,3.6vw,2.625rem)]">Get something off your plate today.</h2>
               <p className="text-white text-[17px] mt-3.5 max-w-md mx-auto">
-                Join thousands of locals and students already helping each other out.
+                Post a task or pick up work nearby — built for students and locals in Aotearoa.
               </p>
               <div className="flex flex-wrap gap-3 justify-center mt-7 md:mt-[30px]">
                 <PostJobLink className="swifto-btn-primary h-[58px] px-8">Post a job</PostJobLink>
@@ -251,7 +253,7 @@ export default function Home() {
         {/* Footer */}
         <footer className="border-t border-line">
           <div className="swifto-content py-9 flex flex-wrap justify-between items-center gap-4">
-            <SwiftoWordmarkInline />
+            <SwiftoWordmark asLink />
             <div className="flex flex-wrap gap-5 text-sm text-ink-2">
               <Link href="/safety" className="hover:text-brand">Safety</Link>
               <Link href="/mission" className="hover:text-brand">Mission</Link>
@@ -269,11 +271,4 @@ export default function Home() {
   )
 }
 
-function SwiftoWordmarkInline() {
-  return (
-    <span className="inline-flex items-baseline">
-      <span className="font-display text-[22px] font-extrabold tracking-tight text-ink">Swifto</span>
-      <span className="w-[7px] h-[7px] rounded-full bg-primary ml-0.5 mb-0.5" aria-hidden />
-    </span>
-  )
-}
+

@@ -9,6 +9,7 @@ export type ListerIdentityDocType = (typeof LISTER_IDENTITY_DOC_TYPES)[number]
 export type ListerIdentityStatus = 'unverified' | 'pending' | 'verified' | 'rejected'
 
 export const LISTER_ID_DOCS_BUCKET = 'lister-id-docs'
+export const AVATARS_BUCKET = 'avatars'
 
 export function identityDocTypeLabel(type: string): string {
   switch (type) {

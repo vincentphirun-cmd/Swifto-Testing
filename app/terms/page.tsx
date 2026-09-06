@@ -306,9 +306,9 @@ export default function TermsPage() {
         <li>attempt to circumvent platform payments or enforcement</li>
       </ul>
       <p>
-        Users may request account deletion by contacting support. Deletion or suspension does not
-        necessarily eliminate outstanding payment, dispute, tax, or record-keeping obligations, as
-        described in our Privacy Statement and Payment &amp; Payout Terms.
+        Users may delete their account in the app (Account &amp; privacy) or by contacting support.
+        Deletion or suspension does not necessarily eliminate outstanding payment, dispute, tax, or
+        record-keeping obligations, as described in our Privacy Statement and Payment &amp; Payout Terms.
       </p>
       <p>
         Where appropriate, users may contact Swifto to request review of an enforcement decision,

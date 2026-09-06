@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { captureEvent } from '@/lib/posthog'
+import { patchOwnProfile } from '@/lib/profile-api'
 
 type ConnectStatus = {
   has_account: boolean
@@ -193,12 +194,8 @@ export function WithdrawModal({ balanceCents, onClose, onSuccess }: Props) {
         }
 
         const acceptedAt = new Date().toISOString()
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ accepted_payout_terms_at: acceptedAt })
-          .eq('id', user.id)
-
-        if (updateError && !isMissingLegalColumn(updateError.code)) {
+        const patched = await patchOwnProfile({ accepted_payout_terms_at: acceptedAt })
+        if (!patched.ok && !patched.error.toLowerCase().includes('column')) {
           setError('Could not record Payment & Payout Terms acceptance. Please try again.')
           setLoading(false)
           return

@@ -8,6 +8,7 @@ import {
   identityDocTypeLabel,
   type ListerIdentityDocType,
 } from '@/lib/lister-identity'
+import { IDENTITY_DOC_MAX_BYTES, IDENTITY_DOC_MIME_TYPES } from '@/lib/security-constants'
 
 type Props = {
   onSubmitted?: () => void
@@ -53,13 +54,13 @@ export function ListerIdentityForm({ onSubmitted }: Props) {
       const paths: string[] = []
 
       for (const file of files) {
-        const allowed = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+        const allowed: string[] = [...IDENTITY_DOC_MIME_TYPES]
         if (!allowed.includes(file.type)) {
           setError('Files must be JPG, PNG, WEBP, or PDF.')
           setLoading(false)
           return
         }
-        if (file.size > 5 * 1024 * 1024) {
+        if (file.size > IDENTITY_DOC_MAX_BYTES) {
           setError('Each file must be under 5MB.')
           setLoading(false)
           return

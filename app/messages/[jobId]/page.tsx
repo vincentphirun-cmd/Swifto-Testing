@@ -17,6 +17,7 @@ import {
   type JobConversation,
   type JobMessage,
 } from '@/lib/job-chat'
+import { fetchPublicProfiles } from '@/lib/public-data'
 
 export default function JobChatPage() {
   const params = useParams()
@@ -59,13 +60,14 @@ export default function JobChatPage() {
     const supabase = createClient()
     const counterpartyId = conv.lister_id === user.id ? conv.student_id : conv.lister_id
 
-    const [{ data: job }, { data: profile }, msgs] = await Promise.all([
+    const [{ data: job }, profiles, msgs] = await Promise.all([
       supabase.from('jobs').select('job_name').eq('id', jobId).maybeSingle(),
-      supabase.from('profiles').select('first_name, last_name').eq('id', counterpartyId).maybeSingle(),
+      fetchPublicProfiles(supabase, [counterpartyId], 'id, first_name, last_name'),
       fetchMessagesForConversation(conv.id),
     ])
 
     setJobTitle(job?.job_name ?? 'Job')
+    const profile = profiles[0]
     const name = profile
       ? [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim()
       : 'Chat partner'
