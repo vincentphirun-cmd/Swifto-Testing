@@ -10,6 +10,7 @@ import { DesignBadge } from '@/components/design/design-badge'
 import { IconDisc } from '@/components/design/icon-disc'
 import { StarRating } from '@/components/design/star-rating'
 import { DESIGN_PHOTOS, LANDING_FEATURED_JOBS } from '@/lib/design-photos'
+import { FooterSocialLinks } from '@/components/footer-social-links'
 
 const TRUST = [
   {
@@ -263,7 +264,10 @@ export default function Home() {
               <Link href="/privacy" className="hover:text-white">Privacy</Link>
               <Link href="/payment-terms" className="hover:text-white">Payment &amp; Payout Terms</Link>
             </div>
-            <p className="text-[13.5px] text-white/60">© Swifto · Auckland, NZ</p>
+            <div className="flex flex-col items-start sm:items-end gap-3">
+              <FooterSocialLinks />
+              <p className="text-[13.5px] text-white/60">© 2025 Swifto · Auckland, NZ. All rights reserved.</p>
+            </div>
           </div>
         </footer>
       </main>
