@@ -153,6 +153,7 @@ export default function PrivacyPage() {
         <li>completion status</li>
         <li>cancellations</li>
         <li>reviews or ratings</li>
+        <li>photos you and the other party upload as evidence when confirming a job is complete</li>
         <li>reports, complaints, or dispute information</li>
         <li>admin notes relating to platform safety, support, or enforcement</li>
       </ul>
@@ -500,6 +501,7 @@ export default function PrivacyPage() {
         <li>a selected student may receive job details needed to complete the task</li>
         <li>a payment provider may receive transaction details needed to process payment</li>
         <li>a verification provider may receive information needed to complete identity or student verification</li>
+        <li>the other party on a job, and Swifto support, may see completion photos you upload</li>
         <li>Swifto support may review communications, reports, or job records when handling disputes or safety concerns</li>
       </ul>
       <p>Swifto does not sell users&apos; personal information.</p>
@@ -622,8 +624,8 @@ export default function PrivacyPage() {
       <p>
         In-app deletion is intended to take a similar number of steps as creating an account. When
         you delete your account, Swifto will remove your login, profile, job posts, applications,
-        messages we hold for you, profile photo, and identity documents stored in our buckets,
-        except where we must retain limited records.
+        messages we hold for you, profile photo, identity documents, and completion evidence photos
+        stored in our buckets, except where we must retain limited records.
       </p>
       <p>
         If you request account deletion, Swifto will take reasonable steps to delete or de-identify

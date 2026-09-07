@@ -121,6 +121,10 @@ Run `supabase_cancellation_rebooking_migration.sql` for student cancellation flo
 
 To enable the "Verify work done" flow where both lister and student confirm completion, run `supabase_after_completion_migration.sql` in the SQL Editor. This adds verification columns and triggers.
 
+## Completion evidence photos
+
+Run `supabase_completion_evidence_migration.sql` in the SQL Editor. This creates a private `job-completion-evidence` bucket and `job_completion_photos` table. Both parties must upload at least one photo when they verify completion. Photos are visible only to that job’s lister, student, and admins. Confirm the bucket is **private** in Storage.
+
 ## Security hardening (required before launch)
 
 Run `supabase_security_hardening_migration.sql` in the SQL Editor. This:

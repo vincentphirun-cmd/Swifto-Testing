@@ -117,7 +117,7 @@ export function SiteNav() {
       )}
       <NavLink href="/mission" onClick={closeMobile}>Our mission</NavLink>
       {loading ? (
-        <span className="text-[15px] text-ink-3 py-2 md:py-0">Loading…</span>
+        <span className="text-[15px] text-white/70 py-2 md:py-0">Loading…</span>
       ) : user ? (
         <>
           <NavLink href={dashboardHref} onClick={closeMobile}>
@@ -126,7 +126,7 @@ export function SiteNav() {
           <button
             type="button"
             onClick={() => { closeMobile(); handleLogout() }}
-            className="swifto-btn-ghost h-10 px-4 text-sm min-h-[44px] w-full md:w-auto"
+            className="swifto-btn-outline-white h-10 px-4 text-sm min-h-[44px] w-full md:w-auto"
           >
             Log out
           </button>
@@ -182,7 +182,7 @@ export function SiteNav() {
           <button
             type="button"
             onClick={() => setMobileMenuOpen((o) => !o)}
-            className="lg:hidden p-2 -mr-2 rounded-lg text-ink hover:bg-brand-soft/50 min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="lg:hidden p-2 -mr-2 rounded-lg text-white hover:bg-white/10 min-h-[44px] min-w-[44px] flex items-center justify-center"
             aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={mobileMenuOpen}
             aria-controls="mobile-nav"
@@ -202,7 +202,7 @@ export function SiteNav() {
       {mobileMenuOpen && (
         <div
           id="mobile-nav"
-          className="lg:hidden border-b border-line bg-canvas/95 backdrop-blur-md shadow-lg"
+          className="lg:hidden border-b border-white/10 bg-brand-deep shadow-lg"
         >
           <div className="swifto-content flex flex-col gap-2 py-4 max-h-[calc(100vh-4rem)] overflow-y-auto">
             {navLinks}

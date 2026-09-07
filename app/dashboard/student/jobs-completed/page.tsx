@@ -12,6 +12,8 @@ import { FeeBreakdown } from '@/components/fee-breakdown'
 import { getStudentPayoutEstimate } from '@/lib/fees'
 import { fetchStudentGstRegistered } from '@/lib/profile-completions'
 import { fetchPublicProfiles } from '@/lib/public-data'
+import { fetchSignedCompletionPhotos, type CompletionPhotoRow } from '@/lib/completion-evidence'
+import { CompletionEvidenceGallery } from '@/components/completion-evidence-gallery'
 
 type CompletionRow = {
   id: string
@@ -28,6 +30,8 @@ type CompletionRow = {
     price: number
   } | null
   listerProfile: { first_name: string; last_name: string } | null
+  listerPhotos: CompletionPhotoRow[]
+  studentPhotos: CompletionPhotoRow[]
 }
 
 export default function StudentJobsCompletedPage() {
@@ -71,10 +75,13 @@ export default function StudentJobsCompletedPage() {
       const profMap: Record<string, { first_name: string; last_name: string }> = {}
       for (const p of profData ?? []) profMap[p.id] = p
 
+      const photosByJob = await fetchSignedCompletionPhotos(supabase, jobIds)
       const combined: CompletionRow[] = compData.map((c) => ({
         ...c,
         job: jobsMap[c.job_id] ?? null,
         listerProfile: profMap[c.lister_id] ?? null,
+        listerPhotos: photosByJob[c.job_id]?.lister ?? [],
+        studentPhotos: photosByJob[c.job_id]?.student ?? [],
       }))
       setCompletions(combined)
       setError(null)
@@ -192,6 +199,14 @@ export default function StudentJobsCompletedPage() {
                                 <span className="text-sm font-semibold text-ink">{c.rating_from_lister ?? '—'}</span>
                               </div>
                             </div>
+                          </div>
+                          <div className="pt-3 border-t border-ink/10">
+                            <CompletionEvidenceGallery
+                              listerPhotos={c.listerPhotos}
+                              studentPhotos={c.studentPhotos}
+                              listerLabel="Lister photos"
+                              studentLabel="Your photos"
+                            />
                           </div>
                         </div>
                       </>

@@ -30,10 +30,7 @@
 
 @layer components {
   .swifto-nav {
-    @apply sticky top-0 z-50 border-b border-line;
-    background: color-mix(in srgb, #F1F6F8 82%, transparent);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    @apply sticky top-0 z-50 border-b border-white/10 bg-brand-deep;
   }
 
   .swifto-card {
@@ -85,11 +82,11 @@
   }
 
   .swifto-nav-link {
-    @apply relative text-[15px] font-medium text-ink-2 hover:text-ink transition-colors py-1.5;
+    @apply relative text-[15px] font-medium text-white/80 hover:text-white transition-colors py-1.5;
   }
 
   .swifto-nav-link-active {
-    @apply text-ink font-bold;
+    @apply text-white font-bold;
   }
 
   .swifto-nav-link-active::after {

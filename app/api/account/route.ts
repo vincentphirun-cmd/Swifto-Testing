@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { LISTER_ID_DOCS_BUCKET } from '@/lib/lister-identity'
+import { COMPLETION_EVIDENCE_BUCKET } from '@/lib/completion-evidence'
 import { getClientIp, rateLimit } from '@/lib/rate-limit'
 
 async function emptyFolder(bucket: string, prefix: string) {
@@ -60,6 +61,17 @@ export async function DELETE(request: Request) {
   try {
     await emptyFolder('avatars', user.id)
     await emptyFolder(LISTER_ID_DOCS_BUCKET, user.id)
+    const adminForPhotos = createAdminClient()
+    const { data: evidence } = await adminForPhotos
+      .from('job_completion_photos')
+      .select('storage_path')
+      .eq('uploaded_by', user.id)
+    const evidencePaths = (evidence ?? [])
+      .map((row) => row.storage_path)
+      .filter((path): path is string => Boolean(path))
+    if (evidencePaths.length > 0) {
+      await adminForPhotos.storage.from(COMPLETION_EVIDENCE_BUCKET).remove(evidencePaths)
+    }
   } catch (e) {
     console.error('Upload purge error:', e)
   }

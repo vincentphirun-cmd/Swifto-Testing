@@ -9,7 +9,9 @@ import { SiteNav } from '@/components/site-nav'
 import { PageHero } from '@/components/page-hero'
 import { LoadingSpinner } from '@/components/loading-spinner'
 import { StarRatingInput } from '@/components/star-rating'
+import { CompletionEvidencePicker } from '@/components/completion-evidence-picker'
 import { captureEvent } from '@/lib/posthog'
+import { uploadCompletionPhotos } from '@/lib/completion-evidence'
 
 export default function StudentVerifyCompletionPage() {
   const params = useParams()
@@ -31,6 +33,8 @@ export default function StudentVerifyCompletionPage() {
   const [alreadyVerified, setAlreadyVerified] = useState(false)
   const [canVerify, setCanVerify] = useState(false)
   const [rating, setRating] = useState(0)
+  const [photos, setPhotos] = useState<File[]>([])
+  const [photoError, setPhotoError] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchData() {
@@ -85,9 +89,20 @@ export default function StudentVerifyCompletionPage() {
       setError('Please rate the lister before confirming.')
       return
     }
+    if (photos.length < 1) {
+      setPhotoError('Add at least one photo of the finished job.')
+      return
+    }
     setSubmitting(true)
     setError(null)
+    setPhotoError(null)
     const supabase = createClient()
+    const uploaded = await uploadCompletionPhotos(supabase, jobId, user.id, 'student', photos)
+    if (uploaded.error) {
+      setPhotoError(uploaded.error)
+      setSubmitting(false)
+      return
+    }
     const { error: err } = await supabase
       .from('job_completions')
       .update({
@@ -205,6 +220,15 @@ export default function StudentVerifyCompletionPage() {
                 </p>
               ) : canVerify ? (
                 <div className="space-y-6">
+                  <CompletionEvidencePicker
+                    files={photos}
+                    onChange={(next) => {
+                      setPhotos(next)
+                      setPhotoError(null)
+                    }}
+                    disabled={submitting}
+                    error={photoError}
+                  />
                   <StarRatingInput
                     label={`Rate ${listerName}`}
                     value={rating}
@@ -213,7 +237,7 @@ export default function StudentVerifyCompletionPage() {
                   />
                   <button
                     onClick={handleVerify}
-                    disabled={submitting || rating < 1}
+                    disabled={submitting || rating < 1 || photos.length < 1}
                     className="w-full h-12 rounded-xl bg-primary text-white font-semibold hover:bg-secondary transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                   >
                     {submitting ? 'Verifying…' : 'I confirm the work has been completed'}

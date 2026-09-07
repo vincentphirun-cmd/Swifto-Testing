@@ -36,7 +36,8 @@ Use **Production** environment for live; add **Preview** if you want preview dep
 After deploy:
 
 1. Run `supabase_security_hardening_migration.sql` in the Supabase SQL Editor.
-2. Confirm **Storage → lister-id-docs** is **private** (not public).
+2. Confirm **Storage → lister-id-docs** and **job-completion-evidence** are **private** (not public).
+2b. Run `supabase_completion_evidence_migration.sql` if you have not already.
 3. Enable Supabase Auth rate limits (Dashboard → Authentication → Rate Limits / Attack protection).
 4. Enable leaked password protection if offered in Auth settings.
 5. Set `NEXT_PUBLIC_APP_URL=https://swifto.co.nz` so emails and Stripe always use HTTPS.

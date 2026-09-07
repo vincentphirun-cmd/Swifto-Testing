@@ -12,6 +12,10 @@ export const IDENTITY_DOC_MIME_TYPES = [
   'application/pdf',
 ] as const
 
+export const COMPLETION_EVIDENCE_MAX_BYTES = 5 * 1024 * 1024
+export const COMPLETION_EVIDENCE_MAX_PHOTOS = 3
+export const COMPLETION_EVIDENCE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const
+
 export const MAX_TEXT_LENGTH = 2000
 export const MAX_BIO_LENGTH = 1000
 export const MAX_NAME_LENGTH = 80
