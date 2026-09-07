@@ -253,21 +253,21 @@ export default function Home() {
 
         {/* Footer */}
         <footer className="bg-brand-deep">
-          <div className="swifto-content py-9 flex flex-wrap justify-between items-center gap-4">
-            <SwiftoWordmark asLink />
-            <div className="flex flex-wrap gap-5 text-sm text-white/80">
-              <Link href="/safety" className="hover:text-white">Safety</Link>
-              <Link href="/mission" className="hover:text-white">Mission</Link>
-              <Link href="/contact" className="hover:text-white">Contact</Link>
-              <Link href="/terms" className="hover:text-white">Terms</Link>
-              <Link href="/community-guidelines" className="hover:text-white">Community Guidelines</Link>
-              <Link href="/privacy" className="hover:text-white">Privacy</Link>
-              <Link href="/payment-terms" className="hover:text-white">Payment &amp; Payout Terms</Link>
-            </div>
-            <div className="flex flex-col items-start sm:items-end gap-3">
+          <div className="swifto-content py-9">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+              <SwiftoWordmark asLink />
               <FooterSocialLinks />
-              <p className="text-[13.5px] text-white/60">© 2025 Swifto · Auckland, NZ. All rights reserved.</p>
+              <div className="flex flex-wrap gap-5 text-sm text-white/80 lg:ml-auto">
+                <Link href="/safety" className="hover:text-white">Safety</Link>
+                <Link href="/mission" className="hover:text-white">Mission</Link>
+                <Link href="/contact" className="hover:text-white">Contact</Link>
+                <Link href="/terms" className="hover:text-white">Terms</Link>
+                <Link href="/community-guidelines" className="hover:text-white">Community Guidelines</Link>
+                <Link href="/privacy" className="hover:text-white">Privacy</Link>
+                <Link href="/payment-terms" className="hover:text-white">Payment &amp; Payout Terms</Link>
+              </div>
             </div>
+            <p className="text-[13.5px] text-white/60 mt-6">© 2025 Swifto · Auckland, NZ. All rights reserved.</p>
           </div>
         </footer>
       </main>
