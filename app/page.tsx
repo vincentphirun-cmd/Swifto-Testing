@@ -251,19 +251,19 @@ export default function Home() {
         </section>
 
         {/* Footer */}
-        <footer className="border-t border-line">
+        <footer className="bg-brand-deep">
           <div className="swifto-content py-9 flex flex-wrap justify-between items-center gap-4">
             <SwiftoWordmark asLink />
-            <div className="flex flex-wrap gap-5 text-sm text-ink-2">
-              <Link href="/safety" className="hover:text-brand">Safety</Link>
-              <Link href="/mission" className="hover:text-brand">Mission</Link>
-              <Link href="/contact" className="hover:text-brand">Contact</Link>
-              <Link href="/terms" className="hover:text-brand">Terms</Link>
-              <Link href="/community-guidelines" className="hover:text-brand">Community Guidelines</Link>
-              <Link href="/privacy" className="hover:text-brand">Privacy</Link>
-              <Link href="/payment-terms" className="hover:text-brand">Payment &amp; Payout Terms</Link>
+            <div className="flex flex-wrap gap-5 text-sm text-white/80">
+              <Link href="/safety" className="hover:text-white">Safety</Link>
+              <Link href="/mission" className="hover:text-white">Mission</Link>
+              <Link href="/contact" className="hover:text-white">Contact</Link>
+              <Link href="/terms" className="hover:text-white">Terms</Link>
+              <Link href="/community-guidelines" className="hover:text-white">Community Guidelines</Link>
+              <Link href="/privacy" className="hover:text-white">Privacy</Link>
+              <Link href="/payment-terms" className="hover:text-white">Payment &amp; Payout Terms</Link>
             </div>
-            <p className="text-[13.5px] text-ink-3">© Swifto · Auckland, NZ</p>
+            <p className="text-[13.5px] text-white/60">© Swifto · Auckland, NZ</p>
           </div>
         </footer>
       </main>
