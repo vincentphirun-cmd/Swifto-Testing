@@ -143,7 +143,7 @@ export async function GET(request: Request) {
 
       const baseInsert = {
         id: userId,
-        role: userMetadata.role || 'student',
+        role: userMetadata.role === 'lister' ? 'lister' : 'student',
         first_name: userMetadata.first_name ?? userEmail?.split('@')[0] ?? 'User',
         last_name: userMetadata.last_name ?? '',
         university: userMetadata.university ?? null,
