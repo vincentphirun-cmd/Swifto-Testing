@@ -4,14 +4,16 @@ export type UserRole = 'lister' | 'student' | 'admin'
 
 export function resolveRole(
   profileRole: string | null | undefined,
-  metadataRole: string | null | undefined
+  _metadataRole: string | null | undefined
 ): UserRole | null {
-  if (profileRole === 'admin' || profileRole === 'lister' || profileRole === 'student') {
+  if (
+    profileRole === 'admin' ||
+    profileRole === 'lister' ||
+    profileRole === 'student'
+  ) {
     return profileRole
   }
-  if (metadataRole === 'admin' || metadataRole === 'lister' || metadataRole === 'student') {
-    return metadataRole
-  }
+
   return null
 }
 
